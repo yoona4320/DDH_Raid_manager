@@ -897,24 +897,31 @@ window.navTo = (page, raidName, status) => {
     document.getElementById('topbar-icon').textContent='📋';
     document.getElementById('topbar-label').textContent='전체 레이드';
     document.getElementById('page-all').classList.add('active');
+    // 전체 누르면 모든 서브메뉴 접기
+    document.querySelectorAll('.sb-sub').forEach(s=>{
+      s.classList.remove('open');
+      const arr=document.getElementById('arr-'+s.id); if(arr) arr.textContent='▸';
+    });
     renderPage('all');
   } else {
-    // raid detail page
     const icons={recruiting:'🔍',full:'🔒',done:'⭐',all:'📋'};
     const labels={recruiting:'모집 중',full:'마감',done:'레이드완료',all:'전체'};
     const icon  = icons[status]  || '📋';
     const label = status ? `${raidName} · ${labels[status]}` : raidName;
     document.getElementById('topbar-icon').textContent  = icon;
     document.getElementById('topbar-label').textContent = label;
-    // highlight sidebar
     const key = `${raidName}::${status||'all'}`;
     document.querySelectorAll('.sb-raid-sub').forEach(b=>{ if(b.dataset.key===key) b.classList.add('active'); });
     document.querySelectorAll('.sb-raid-parent').forEach(b=>{ if(b.dataset.raid===raidName) b.classList.add('active'); });
+    // 해당 레이드 서브메뉴만 펼치기
+    const subKey=`sb-sub-${raidName.replace(/\s/g,'_')}`;
+    const sub=document.getElementById(subKey);
+    const arr=document.getElementById('arr-'+subKey);
+    if(sub){ sub.classList.add('open'); if(arr) arr.textContent='▾'; }
     document.getElementById('page-raid').classList.add('active');
     renderRaidPage();
   }
   document.getElementById('sidebar').classList.remove('open');
-  // 페이지 상단으로 스크롤
   const activePage=document.querySelector('.page.active');
   if(activePage) activePage.scrollTop=0;
   window.scrollTo(0,0);
@@ -966,9 +973,9 @@ function rebuildSidebar(){
       <span class="sb-icon">⚔️</span>
       <span style="flex:1;text-align:left;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${n}</span>
       <span class="sb-badge">${c.total}</span>
-      <span onclick="event.stopPropagation();toggleRaidSub('${subKey}')" style="padding:0 6px;color:var(--text2);font-size:14px;cursor:pointer;line-height:1;" id="arr-${subKey}">▾</span>
+      <span onclick="event.stopPropagation();toggleRaidSub('${subKey}')" style="padding:0 6px;color:var(--text2);font-size:14px;cursor:pointer;line-height:1;" id="arr-${subKey}">▸</span>
     </button>
-    <div class="sb-sub open" id="${subKey}">
+    <div class="sb-sub" id="${subKey}">
       ${c.rec>0?`<button class="sb-item sb-raid-sub ${currentRaid===n&&currentStatus==='recruiting'?'active':''}" data-key="${n}::recruiting" onclick="navTo('raid','${n.replace(/'/g,"\\'")}','recruiting')"><span class="sb-icon">🔍</span>모집 중<span class="sb-badge">${c.rec}</span></button>`:''}
       ${c.full>0?`<button class="sb-item sb-raid-sub full-item ${currentRaid===n&&currentStatus==='full'?'active':''}" data-key="${n}::full" onclick="navTo('raid','${n.replace(/'/g,"\\'")}','full')"><span class="sb-icon">🔒</span>마감<span class="sb-badge">${c.full}</span></button>`:''}
       ${c.done>0?`<button class="sb-item sb-raid-sub done-item ${currentRaid===n&&currentStatus==='done'?'active':''}" data-key="${n}::done" onclick="navTo('raid','${n.replace(/'/g,"\\'")}','done')"><span class="sb-icon">⭐</span>레이드완료<span class="sb-badge">${c.done}</span></button>`:''}
@@ -1071,9 +1078,9 @@ function cardHTML(id, r){
       const bg=typeof entry==='object'?entry.bg:'';
       const effects=typeof entry==='object'&&entry.effects?.length?entry.effects:[];
       const effectStr=effects.length?`(${effects.join(',')})` : '';
-      const jobLabel=job?(bg?`${bg}/${job}`:job):'';
-      const label=jobLabel
-        ? `<span style="color:#fff;font-weight:700;">${nick}</span><span style="color:#fff;font-weight:700;">[${jobLabel}]</span>${effectStr?`<span style="color:var(--text2);font-size:10px;">${effectStr}</span>`:''}`
+      // 배경 생략, 직업명만 표시
+      const label=job
+        ? `<span style="color:#fff;font-weight:700;">${nick}</span><span style="color:#fff;font-weight:700;">[${job}]</span>${effectStr?`<span style="color:var(--text2);font-size:10px;">${effectStr}</span>`:''}`
         : `<span style="color:#fff;font-weight:700;">${nick}</span>`;
       return `<div class="member-tag${nick===myNick?' me':''}"><span class="role-dot dealer"></span>${label}</div>`;
     }
@@ -1087,9 +1094,9 @@ function cardHTML(id, r){
       const bg=typeof entry==='object'?entry.bg:'';
       const effects=typeof entry==='object'&&entry.effects?.length?entry.effects:[];
       const effectStr=effects.length?`(${effects.join(',')})` : '';
-      const jobLabel=job?(bg?`${bg}/${job}`:job):'';
-      const label=jobLabel
-        ? `<span style="color:#fff;font-weight:700;">${nick}</span><span style="color:#fff;font-weight:700;">[${jobLabel}]</span>${effectStr?`<span style="color:var(--text2);font-size:10px;">${effectStr}</span>`:''}`
+      // 배경 생략, 직업명만 표시 (서폿은 효과도 생략)
+      const label=job
+        ? `<span style="color:#fff;font-weight:700;">${nick}</span><span style="color:#fff;font-weight:700;">[${job}]</span>`
         : `<span style="color:#fff;font-weight:700;">${nick}</span>`;
       return `<div class="member-tag${nick===myNick?' me':''}"><span class="role-dot support"></span>${label}</div>`;
     }
@@ -1460,10 +1467,11 @@ window.startEditTagBtn=()=>{}; // legacy stub
 // ── 직업배경 ──
 function renderJobBgTags(){
   const el=document.getElementById('st-bg-tags'); if(!el) return;
+  const prev=el.scrollTop;
   const bgs=cfgDraft.jobs.bgs||[];
   el.innerHTML=bgs.length?bgs.map((v,i)=>editTagItem(v,'__bgs__',i,`stDelBgItem(${i})`)).join('')
     :'<span style="color:var(--text3);font-size:12px;">배경 없음</span>';
-  el.scrollTop=el.scrollHeight;
+  el.scrollTop=_editMode.key?prev:el.scrollHeight;
   initDrag(el,'__bgs__');
 }
 window.stAddBg=()=>{
@@ -1499,12 +1507,13 @@ function populateJobNameBgSel(){
 }
 window.renderJobNamesByBg=()=>{
   const el=document.getElementById('st-jobname-tags'); if(!el) return;
+  const prev=el.scrollTop;
   const bg=document.getElementById('st-jobname-bg-sel')?.value||'';
   if(!bg){ el.innerHTML='<span style="color:var(--text3);font-size:12px;">배경을 먼저 선택하세요</span>'; return; }
   const jobs=(cfgDraft.jobs.jobsByBg?.[bg])||[];
   el.innerHTML=jobs.length?jobs.map((v,i)=>editTagItem(v,'__jobnames__',i,`stDelJobNameItem('${bg.replace(/'/g,"\\'")}',${i})`)).join('')
     :'<span style="color:var(--text3);font-size:12px;">직업명 없음</span>';
-  el.scrollTop=el.scrollHeight;
+  el.scrollTop=_editMode.key?prev:el.scrollHeight;
 };
 window.stAddJobName=()=>{
   const bg=document.getElementById('st-jobname-bg-sel')?.value||'';
@@ -1532,10 +1541,11 @@ window.stDelJobNameItem=(bg,i)=>{
 // ── 직업효과 (독립 목록) ──
 function renderEffectTagsIndep(){
   const el=document.getElementById('st-effect-tags'); if(!el) return;
+  const prev=el.scrollTop;
   const effs=cfgDraft.jobs.effects||[];
   el.innerHTML=effs.length?effs.map((v,i)=>editTagItem(v,'__effects__',i,`stDelEffectItem(${i})`)).join('')
     :'<span style="color:var(--text3);font-size:12px;">효과 없음</span>';
-  el.scrollTop=el.scrollHeight;
+  el.scrollTop=_editMode.key?prev:el.scrollHeight;
 }
 window.stAddEffect=()=>{
   const inp=document.getElementById('st-effect-input'),v=inp.value.trim(); if(!v) return;
@@ -1614,6 +1624,7 @@ window.populateEffBgSel=()=>{}; window.populateComboBgSel=()=>{};
 
 function renderDraggableList(containerId,items,key){
   const el=document.getElementById(containerId);
+  const prevScroll=el?el.scrollTop:0;
   if(!items||!items.length){ el.innerHTML='<span style="color:var(--text3);font-size:12px;">항목 없음 — 아래에서 추가하세요</span>'; return; }
   el.innerHTML=items.map((v,i)=>`
     <div class="tag-item" draggable="true" data-index="${i}" data-key="${key}" style="display:flex;align-items:center;gap:4px;">
@@ -1622,7 +1633,8 @@ function renderDraggableList(containerId,items,key){
       <button style="padding:2px 6px;font-size:11px;background:rgba(91,110,245,.15);color:var(--accent);border:1px solid rgba(91,110,245,.3);border-radius:4px;cursor:pointer;flex-shrink:0;" onclick="startInlineEdit(this,'${key}',${i})">✏️</button>
       <button class="tag-del" onclick="stDelItem('${key}',${i})" style="flex-shrink:0;">✕</button>
     </div>`).join('');
-  el.scrollTop = el.scrollHeight;
+  // 수정 모드 중이면 이전 위치 유지, 아니면 그대로
+  el.scrollTop = _editMode.key ? prevScroll : el.scrollTop;
   initDrag(el,key);
 }
 // 수정 모드 상태
@@ -1657,12 +1669,22 @@ function commitEdit(){
   if(!key) return;
   const inp=document.getElementById(inputId);
   const val=inp?.value.trim(); if(!val){cancelEdit();return;}
-  if(key==='raidNames')       stEditItem('raidNames',idx,val);
-  else if(key==='__diffs__')  stEditItem('__diffs__',idx,val);
-  else if(key==='__bgs__')    stEditBgItem(idx,val);
+  // 스크롤 위치 저장
+  const listMap={
+    'raidNames':'st-raid-tags','__diffs__':'st-diff-tags',
+    '__bgs__':'st-bg-tags','__jobnames__':'st-jobname-tags','__effects__':'st-effect-tags'
+  };
+  const listEl=document.getElementById(listMap[key]);
+  const savedScroll=listEl?listEl.scrollTop:0;
+  if(key==='raidNames')         stEditItem('raidNames',idx,val);
+  else if(key==='__diffs__')    stEditItem('__diffs__',idx,val);
+  else if(key==='__bgs__')      stEditBgItem(idx,val);
   else if(key==='__jobnames__') stEditJobNameItem(extraArg||'',idx,val);
   else if(key==='__effects__')  stEditEffectItem(idx,val);
   resetEditMode();
+  // 스크롤 위치 복원
+  const listElAfter=document.getElementById(listMap[key]);
+  if(listElAfter) listElAfter.scrollTop=savedScroll;
 }
 function cancelEdit(){ resetEditMode(); }
 function resetEditMode(){
