@@ -10,7 +10,7 @@
 :root{
   --bg:#0d0f14;--surface:#161920;--surface2:#1e2230;--border:#2a2f42;
   --accent:#5b6ef5;--accent2:#e8a838;--red:#e85555;--green:#3ecf8e;
-  --dealer:#f97316;--support:#38bdf8;--text:#e8eaf0;--text2:#8b93a8;--text3:#5a6070;
+  --dealer:#db2777;--support:#38bdf8;--text:#e8eaf0;--text2:#8b93a8;--text3:#5a6070;
   --sidebar:200px;
 }
 *{margin:0;padding:0;box-sizing:border-box;}
@@ -182,8 +182,8 @@ body{font-family:'Noto Sans KR',sans-serif;background:var(--bg);color:var(--text
   border:none;font-family:'Noto Sans KR',sans-serif;transition:background .15s,border-color .15s,color .15s;
   display:flex;align-items:center;justify-content:center;gap:4px;}
 .action-btn:disabled{opacity:.32;cursor:not-allowed;}
-.btn-dealer{background:rgba(249,115,22,.15);color:var(--dealer);border:1px solid rgba(249,115,22,.3);}
-.btn-dealer:not(:disabled):hover{background:rgba(249,115,22,.28);}
+.btn-dealer{background:rgba(219,39,119,.15);color:var(--dealer);border:1px solid rgba(219,39,119,.3);}
+.btn-dealer:not(:disabled):hover{background:rgba(219,39,119,.28);}
 .btn-support{background:rgba(56,189,248,.12);color:var(--support);border:1px solid rgba(56,189,248,.3);}
 .btn-support:not(:disabled):hover{background:rgba(56,189,248,.25);}
 .btn-cancel{background:rgba(232,85,85,.12);color:var(--red);border:1px solid rgba(232,85,85,.3);}
@@ -930,7 +930,7 @@ function cardHTML(id, r){
         <div class="member-list">${dSlots}</div>
       </div>
       <div class="role-col">
-        <div class="role-header support">서포터 <span class="count-pill">${sp.length}/${r.maxSupport}</span></div>
+        <div class="role-header support">서폿 <span class="count-pill">${sp.length}/${r.maxSupport}</span></div>
         <div class="member-list">${sSlots}</div>
       </div>
     </div>
@@ -951,7 +951,7 @@ window._join = async (id, role) => {
       await push(ref(db,`raids/${id}/dealers`), myNick);
       showToast('⚔️ 딜러 신청 완료!','success');
     } else {
-      if(sp.length>=r.maxSupport){ showToast('서포터 자리가 꽉 찼습니다','error'); return; }
+      if(sp.length>=r.maxSupport){ showToast('서폿 자리가 꽉 찼습니다','error'); return; }
       await push(ref(db,`raids/${id}/supports`), myNick);
       showToast('🛡 서폿 신청 완료!','success');
     }
