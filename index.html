@@ -1,0 +1,1158 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>레이드 현황</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;900&family=Rajdhani:wght@600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#0d0f14;--surface:#161920;--surface2:#1e2230;--border:#2a2f42;
+  --accent:#5b6ef5;--accent2:#e8a838;--red:#e85555;--green:#3ecf8e;
+  --dealer:#e85555;--support:#3ecf8e;--text:#e8eaf0;--text2:#8b93a8;--text3:#5a6070;
+  --sidebar:200px;
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{font-family:'Noto Sans KR',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;}
+
+/* AUTH MODAL */
+.auth-modal-overlay{display:none;position:fixed;inset:0;z-index:300;background:rgba(0,0,0,.75);
+  backdrop-filter:blur(6px);align-items:center;justify-content:center;padding:20px;}
+.auth-modal-overlay.open{display:flex;}
+.auth-box{background:var(--surface);border:1px solid var(--border);border-radius:20px;
+  width:100%;max-width:400px;padding:36px;animation:fadeUp .25s ease;}
+@keyframes fadeUp{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:none}}
+.auth-logo{font-family:'Noto Sans KR',sans-serif;font-size:22px;font-weight:900;letter-spacing:1px;
+  color:var(--accent);text-align:center;margin-bottom:4px;}
+.auth-logo span{color:var(--accent2);}
+.auth-sub{text-align:center;font-size:12px;color:var(--text3);margin-bottom:24px;}
+.auth-tabs{display:flex;background:var(--surface2);border-radius:10px;padding:4px;margin-bottom:20px;}
+.auth-tab{flex:1;padding:8px;border:none;border-radius:7px;font-size:13px;font-weight:700;
+  cursor:pointer;font-family:'Noto Sans KR',sans-serif;background:transparent;color:var(--text2);transition:all .2s;}
+.auth-tab.active{background:var(--accent);color:#fff;}
+.auth-form{display:none;}
+.auth-form.active{display:block;}
+.af-group{margin-bottom:13px;}
+.af-group label{display:block;font-size:12px;color:var(--text2);margin-bottom:5px;font-weight:500;}
+.af-group input{width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:8px;
+  padding:10px 12px;color:var(--text);font-size:14px;font-family:'Noto Sans KR',sans-serif;outline:none;transition:border-color .2s;}
+.af-group input:focus{border-color:var(--accent);}
+.remember-row{display:flex;align-items:center;gap:7px;margin-bottom:14px;}
+.remember-row input[type=checkbox]{width:15px;height:15px;accent-color:var(--accent);cursor:pointer;}
+.remember-row label{font-size:12px;color:var(--text2);cursor:pointer;}
+.btn-auth{width:100%;background:var(--accent);color:#fff;border:none;border-radius:10px;
+  padding:12px;font-size:15px;font-weight:700;cursor:pointer;font-family:'Noto Sans KR',sans-serif;transition:all .2s;}
+.btn-auth:hover{background:#7080ff;}
+.auth-err{font-size:12px;color:var(--red);margin-top:8px;text-align:center;min-height:16px;}
+
+/* APP */
+.app{display:flex;min-height:100vh;}
+
+/* SIDEBAR */
+.sidebar{width:var(--sidebar);min-height:100vh;background:var(--surface);border-right:1px solid var(--border);
+  display:flex;flex-direction:column;position:fixed;top:0;left:0;z-index:50;}
+.sb-logo{padding:18px 16px 14px;font-family:'Noto Sans KR',sans-serif;font-size:16px;font-weight:900;
+  letter-spacing:0px;color:var(--accent);border-bottom:1px solid var(--border);}
+.sb-logo span{color:var(--accent2);}
+.sb-section{padding:10px 14px 3px;font-size:10px;font-weight:700;color:var(--text3);letter-spacing:.8px;text-transform:uppercase;}
+.sb-nav{flex:1;padding:8px;overflow-y:auto;}
+.sb-item{display:flex;align-items:center;gap:8px;padding:9px 10px;border-radius:8px;
+  font-size:13px;color:var(--text2);cursor:pointer;transition:background .15s,color .15s;
+  border:none;background:none;font-family:'Noto Sans KR',sans-serif;width:100%;text-align:left;}
+.sb-item:hover{background:var(--surface2);color:var(--text);}
+.sb-item.active{background:rgba(91,110,245,.15);color:var(--accent);font-weight:700;}
+.sb-item.full-item.active{background:rgba(232,85,85,.12);color:var(--red);}
+.sb-item.done-item.active{background:rgba(62,207,142,.12);color:var(--green);}
+.sb-item .sb-icon{font-size:14px;flex-shrink:0;}
+.sb-item .sb-badge{margin-left:auto;background:var(--surface2);border-radius:10px;padding:1px 6px;font-size:11px;color:var(--text3);}
+.sb-item.active .sb-badge{background:rgba(91,110,245,.2);color:var(--accent);}
+.sb-item.full-item.active .sb-badge{background:rgba(232,85,85,.15);color:var(--red);}
+.sb-item.done-item.active .sb-badge{background:rgba(62,207,142,.15);color:var(--green);}
+.sb-sub{padding-left:10px;overflow:hidden;max-height:0;transition:max-height .25s ease;}
+.sb-sub.open{max-height:500px;}
+.sb-sub .sb-item{font-size:12px;padding:7px 10px;}
+/* collapse toggle arrow */
+.sb-item .sb-arrow{margin-left:auto;font-size:10px;transition:transform .2s;color:var(--text3);}
+.sb-item.collapsed .sb-arrow{transform:rotate(-90deg);}
+.sb-divider{height:1px;background:var(--border);margin:6px 8px;}
+.sb-user{padding:12px 14px;border-top:1px solid var(--border);}
+.sb-user-nick{font-size:13px;font-weight:700;color:var(--text);margin-bottom:2px;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.sb-user-email{font-size:11px;color:var(--text3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-bottom:8px;}
+.sync-row{display:flex;align-items:center;gap:6px;margin-bottom:6px;}
+.sync-dot{width:7px;height:7px;border-radius:50%;background:var(--text3);flex-shrink:0;transition:background .3s;}
+.sync-dot.live{background:var(--green);animation:pulse 2s infinite;}
+.sync-label{font-size:11px;color:var(--text3);}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+.btn-logout{width:100%;background:var(--surface2);border:1px solid var(--border);color:var(--text3);
+  border-radius:7px;padding:7px;font-size:12px;cursor:pointer;font-family:'Noto Sans KR',sans-serif;transition:all .2s;}
+.btn-logout:hover{border-color:var(--red);color:var(--red);}
+.sb-guest{padding:12px 14px;border-top:1px solid var(--border);}
+.sb-guest-txt{font-size:12px;color:var(--text3);margin-bottom:8px;}
+.btn-sb-login{width:100%;background:var(--accent);color:#fff;border:none;border-radius:7px;
+  padding:8px;font-size:12px;font-weight:700;cursor:pointer;font-family:'Noto Sans KR',sans-serif;transition:all .2s;}
+.btn-sb-login:hover{background:#7080ff;}
+
+/* CONTENT */
+.content{margin-left:var(--sidebar);flex:1;min-height:100vh;display:flex;flex-direction:column;}
+.topbar{height:56px;border-bottom:1px solid var(--border);display:flex;align-items:center;
+  justify-content:space-between;padding:0 24px;background:rgba(13,15,20,.75);backdrop-filter:blur(12px);
+  position:sticky;top:0;z-index:40;}
+.topbar-title{font-size:16px;font-weight:700;}
+.topbar-actions{display:flex;gap:8px;align-items:center;}
+.btn-top{border:none;border-radius:8px;padding:7px 14px;font-size:13px;font-weight:700;
+  cursor:pointer;font-family:'Noto Sans KR',sans-serif;transition:all .2s;display:flex;align-items:center;gap:5px;}
+.btn-primary{background:var(--accent);color:#fff;}
+.btn-primary:hover{background:#7080ff;}
+.btn-secondary{background:var(--surface2);color:var(--text2);border:1px solid var(--border);}
+.btn-secondary:hover{border-color:var(--accent);color:var(--accent);}
+
+.page{display:none;padding:24px;}
+.page.active{display:block;}
+
+/* CARD */
+.raids-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:16px;}
+.raid-card{background:var(--surface);border:1px solid var(--border);border-radius:14px;overflow:hidden;animation:cardIn .25s ease;}
+@keyframes cardIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+.raid-card.full-card{opacity:.78;border-color:rgba(232,85,85,.2);}
+.raid-card.done-card{opacity:.6;border-color:rgba(62,207,142,.18);}
+
+.card-header{padding:13px 15px 11px;border-bottom:1px solid var(--border);
+  display:flex;align-items:center;justify-content:space-between;gap:8px;}
+.card-title-group{display:flex;align-items:center;gap:6px;flex-wrap:wrap;flex:1;min-width:0;}
+.card-title{font-size:14px;font-weight:700;line-height:1.3;}
+.diff-badge{font-size:10px;font-weight:700;border-radius:4px;padding:2px 7px;
+  background:rgba(91,110,245,.18);color:var(--accent);flex-shrink:0;border:1px solid transparent;}
+/* when custom color is set via inline style, background override also needed */
+.diff-badge[style]{background:transparent!important;}
+/* status badge now sits inline next to diff */
+.card-status{font-size:10px;border-radius:4px;padding:2px 7px;font-weight:700;white-space:nowrap;flex-shrink:0;}
+.card-status.recruiting{background:rgba(91,110,245,.15);color:var(--accent);}
+.card-status.full{background:rgba(232,85,85,.15);color:var(--red);}
+.card-status.done{background:rgba(62,207,142,.12);color:var(--green);}
+.card-header-right{display:flex;align-items:center;gap:5px;flex-shrink:0;flex-wrap:wrap;justify-content:flex-end;}
+.hdr-btn{border:none;border-radius:6px;padding:4px 8px;font-size:11px;font-weight:700;cursor:pointer;
+  font-family:'Noto Sans KR',sans-serif;transition:all .15s;white-space:nowrap;line-height:1.4;}
+.hdr-btn:disabled{opacity:.3;cursor:not-allowed;}
+.hdr-edit{background:var(--surface2);color:var(--text2);border:1px solid var(--border);}
+.hdr-edit:not(:disabled):hover{border-color:var(--accent);color:var(--accent);}
+.hdr-delete{background:var(--surface2);color:var(--red);border:1px solid rgba(232,85,85,.3);}
+.hdr-delete:not(:disabled):hover{background:rgba(232,85,85,.12);border-color:var(--red);}
+.hdr-done{background:rgba(62,207,142,.1);color:var(--green);border:1px solid rgba(62,207,142,.25);}
+.hdr-done:not(:disabled):hover{background:rgba(62,207,142,.22);}
+.hdr-undone{background:rgba(232,168,56,.1);color:var(--accent2);border:1px solid rgba(232,168,56,.25);}
+.hdr-undone:not(:disabled):hover{background:rgba(232,168,56,.2);}
+/* color picker in settings */
+.tag-color-row{display:flex;align-items:center;gap:6px;}
+.tag-color-swatch{width:18px;height:18px;border-radius:4px;border:1px solid var(--border);cursor:pointer;flex-shrink:0;}
+.tag-color-input{width:0;height:0;opacity:0;position:absolute;pointer-events:none;}
+
+.card-meta{padding:11px 15px 0;display:flex;gap:14px;flex-wrap:wrap;}
+.meta-item{display:flex;flex-direction:column;gap:2px;}
+.meta-label{font-size:10px;color:var(--text3);}
+.meta-value{font-size:12px;color:var(--text);font-weight:500;}
+.progress-wrap{padding:11px 15px 9px;}
+.progress-label{display:flex;justify-content:space-between;margin-bottom:5px;font-size:11px;color:var(--text2);}
+.progress-bar{height:4px;background:var(--border);border-radius:3px;overflow:hidden;}
+.progress-fill{height:100%;border-radius:3px;background:linear-gradient(90deg,var(--accent),#8b9dff);transition:width .4s;}
+.progress-fill.danger{background:linear-gradient(90deg,var(--red),#ff8888);}
+.progress-fill.done-fill{background:var(--green);}
+.roles-section{padding:0 15px 11px;display:flex;gap:10px;}
+.role-col{flex:1;}
+.role-header{font-size:10px;font-weight:700;margin-bottom:5px;display:flex;align-items:center;gap:4px;}
+.role-header.dealer{color:var(--dealer);}
+.role-header.support{color:var(--support);}
+.count-pill{background:var(--surface2);border-radius:10px;padding:1px 6px;font-size:10px;color:var(--text2);}
+.member-list{display:flex;flex-direction:column;gap:3px;}
+.member-tag{font-size:11px;color:var(--text2);background:var(--surface2);border-radius:5px;
+  padding:3px 7px;display:flex;align-items:center;gap:4px;animation:tagIn .2s ease;}
+.member-tag.me{color:var(--text);border:1px solid rgba(91,110,245,.3);}
+.role-dot{width:5px;height:5px;border-radius:50%;}
+.role-dot.dealer{background:var(--dealer);}
+.role-dot.support{background:var(--support);}
+.slot-empty{font-size:11px;color:var(--text3);padding:3px 0 3px 7px;}
+@keyframes tagIn{from{opacity:0;transform:translateY(-3px)}to{opacity:1;transform:none}}
+.card-actions{padding:10px 15px 12px;border-top:1px solid var(--border);display:flex;gap:7px;}
+.action-btn{flex:1;padding:8px 0;border-radius:7px;font-size:12px;font-weight:700;cursor:pointer;
+  border:none;font-family:'Noto Sans KR',sans-serif;transition:background .15s,border-color .15s,color .15s;
+  display:flex;align-items:center;justify-content:center;gap:4px;}
+.action-btn:disabled{opacity:.32;cursor:not-allowed;}
+.btn-dealer{background:rgba(232,85,85,.15);color:var(--dealer);border:1px solid rgba(232,85,85,.3);}
+.btn-dealer:not(:disabled):hover{background:rgba(232,85,85,.28);}
+.btn-support{background:rgba(62,207,142,.12);color:var(--support);border:1px solid rgba(62,207,142,.3);}
+.btn-support:not(:disabled):hover{background:rgba(62,207,142,.25);}
+.btn-cancel{background:rgba(232,168,56,.1);color:var(--accent2);border:1px solid rgba(232,168,56,.25);}
+.btn-cancel:not(:disabled):hover{background:rgba(232,168,56,.2);}
+.login-required-msg{text-align:center;padding:10px 15px 12px;border-top:1px solid var(--border);
+  font-size:12px;color:var(--text3);}
+.login-required-msg a{color:var(--accent);cursor:pointer;text-decoration:underline;}
+
+/* section header */
+.section-hd{display:flex;align-items:center;gap:10px;margin-bottom:14px;margin-top:4px;}
+.section-hd h2{font-size:15px;font-weight:700;}
+.section-hd .badge{font-size:11px;background:var(--surface2);border-radius:10px;padding:2px 8px;color:var(--text2);}
+.section-hd .badge.red{background:rgba(232,85,85,.12);color:var(--red);}
+.section-hd .badge.green{background:rgba(62,207,142,.12);color:var(--green);}
+.empty-state{text-align:center;padding:60px 20px;color:var(--text3);font-size:14px;line-height:1.8;}
+.empty-icon{font-size:38px;display:block;margin-bottom:12px;opacity:.4;}
+
+/* MODAL */
+.modal-overlay{display:none;position:fixed;inset:0;z-index:200;background:rgba(0,0,0,.75);
+  backdrop-filter:blur(6px);align-items:center;justify-content:center;padding:20px;}
+.modal-overlay.open{display:flex;}
+.modal{background:var(--surface);border:1px solid var(--border);border-radius:16px;
+  width:100%;padding:28px;animation:modalIn .2s ease;max-height:90vh;overflow-y:auto;}
+@keyframes modalIn{from{opacity:0;transform:translateY(10px) scale(.97)}to{opacity:1;transform:none}}
+.modal-title{font-size:17px;font-weight:700;margin-bottom:20px;}
+.form-group{margin-bottom:14px;}
+.form-group label{display:block;font-size:12px;color:var(--text2);margin-bottom:5px;font-weight:500;}
+.form-group input,.form-group select{width:100%;background:var(--surface2);border:1px solid var(--border);
+  border-radius:8px;padding:9px 12px;color:var(--text);font-size:14px;
+  font-family:'Noto Sans KR',sans-serif;outline:none;transition:border-color .2s;}
+.form-group input:focus,.form-group select:focus{border-color:var(--accent);}
+.form-group select option{background:var(--surface2);}
+.form-row{display:flex;gap:10px;}
+.form-row .form-group{flex:1;}
+.modal-actions{display:flex;gap:10px;margin-top:6px;}
+.btn-confirm{flex:1;background:var(--accent);color:#fff;border:none;border-radius:8px;padding:10px;
+  font-size:14px;font-weight:700;cursor:pointer;font-family:'Noto Sans KR',sans-serif;transition:all .2s;}
+.btn-confirm:hover{background:#7080ff;}
+.btn-mcancel{background:var(--surface2);border:1px solid var(--border);color:var(--text2);
+  border-radius:8px;padding:10px 18px;font-size:14px;cursor:pointer;
+  font-family:'Noto Sans KR',sans-serif;transition:all .2s;}
+.btn-mcancel:hover{border-color:var(--accent);color:var(--accent);}
+
+/* SETTINGS */
+.settings-modal{max-width:520px;}
+.stabs{display:flex;gap:4px;margin-bottom:18px;background:var(--surface2);border-radius:10px;padding:4px;}
+.stab{flex:1;padding:7px;border:none;border-radius:7px;font-size:13px;font-weight:700;
+  cursor:pointer;font-family:'Noto Sans KR',sans-serif;background:transparent;color:var(--text2);transition:all .2s;}
+.stab.active{background:var(--accent);color:#fff;}
+.stab-panel{display:none;}
+.stab-panel.active{display:block;}
+.s-section{margin-bottom:20px;}
+.s-section-title{font-size:11px;color:var(--text3);font-weight:700;letter-spacing:.8px;text-transform:uppercase;margin-bottom:10px;}
+.tag-list{display:flex;flex-direction:column;gap:6px;margin-bottom:10px;}
+.tag-item{display:flex;align-items:center;gap:8px;background:var(--surface2);border:1px solid var(--border);
+  border-radius:8px;padding:8px 12px;font-size:13px;user-select:none;}
+.tag-drag{color:var(--text3);cursor:grab;font-size:16px;flex-shrink:0;line-height:1;}
+.tag-drag:active{cursor:grabbing;}
+.tag-label{flex:1;}
+.tag-del{background:none;border:none;color:var(--text3);cursor:pointer;font-size:13px;padding:0;transition:color .15s;line-height:1;flex-shrink:0;}
+.tag-del:hover{color:var(--red);}
+.tag-add-row{display:flex;gap:8px;}
+.tag-add-row input{flex:1;background:var(--surface2);border:1px solid var(--border);border-radius:8px;
+  padding:7px 11px;color:var(--text);font-size:13px;font-family:'Noto Sans KR',sans-serif;outline:none;transition:border-color .2s;}
+.tag-add-row input:focus{border-color:var(--accent);}
+.btn-add-tag{background:var(--accent);color:#fff;border:none;border-radius:8px;padding:7px 14px;
+  font-size:13px;font-weight:700;cursor:pointer;font-family:'Noto Sans KR',sans-serif;white-space:nowrap;transition:all .2s;}
+.btn-add-tag:hover{background:#7080ff;}
+.tag-item.drag-over{border-color:var(--accent);background:rgba(91,110,245,.1);}
+.tag-item.dragging{opacity:.4;}
+.count-setting-row{display:flex;align-items:center;justify-content:space-between;
+  background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:12px 16px;margin-bottom:10px;}
+.count-setting-label{font-size:13px;color:var(--text2);}
+.count-stepper{display:flex;align-items:center;gap:10px;}
+.step-btn{width:30px;height:30px;border-radius:7px;border:1px solid var(--border);background:var(--surface);
+  color:var(--text);font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .15s;}
+.step-btn:hover{border-color:var(--accent);color:var(--accent);}
+.step-val{font-size:15px;font-weight:700;min-width:24px;text-align:center;}
+
+/* LOADING / TOAST */
+.loading-screen{position:fixed;inset:0;background:var(--bg);z-index:999;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;}
+.loading-screen.hide{animation:fadeOut .4s forwards;}
+@keyframes fadeOut{to{opacity:0;pointer-events:none}}
+.spinner{width:38px;height:38px;border:3px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin .8s linear infinite;}
+@keyframes spin{to{transform:rotate(360deg)}}
+.loading-text{font-size:13px;color:var(--text2);}
+.toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:var(--surface2);
+  border:1px solid var(--border);border-radius:10px;padding:10px 20px;font-size:13px;color:var(--text);
+  z-index:600;opacity:0;pointer-events:none;transition:opacity .3s,bottom .3s;white-space:nowrap;}
+.toast.show{opacity:1;bottom:32px;}
+.toast.success{border-color:var(--green);color:var(--green);}
+.toast.error{border-color:var(--red);color:var(--red);}
+
+@media(max-width:640px){
+  :root{--sidebar:0px;}
+  .sidebar{transform:translateX(-100%);transition:transform .25s;width:220px;}
+  .sidebar.open{transform:translateX(0);}
+  .mobile-menu-btn{display:flex!important;}
+  .raids-grid{grid-template-columns:1fr;}
+}
+.mobile-menu-btn{display:none;background:none;border:none;color:var(--text);font-size:20px;cursor:pointer;padding:4px;}
+</style>
+</head>
+<body>
+
+<div class="loading-screen" id="loading-screen">
+  <div class="spinner"></div>
+  <div class="loading-text">연결 중...</div>
+</div>
+
+<!-- AUTH MODAL -->
+<div class="auth-modal-overlay" id="auth-modal">
+  <div class="auth-box">
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:4px;">
+      <div class="auth-logo">레이드 현황</div>
+      <button onclick="closeAuthModal()" style="background:none;border:none;color:var(--text3);font-size:20px;cursor:pointer;line-height:1;padding:0;">✕</button>
+    </div>
+    <div class="auth-sub">레이드 모집 관리 시스템</div>
+    <div class="auth-tabs">
+      <button class="auth-tab active" onclick="switchAuth('login',this)">로그인</button>
+      <button class="auth-tab" onclick="switchAuth('register',this)">회원가입</button>
+    </div>
+    <div class="auth-form active" id="form-login">
+      <div class="af-group"><label>아이디 (이메일)</label><input type="email" id="l-email" placeholder="example@email.com" onkeydown="if(event.key==='Enter')doLogin()"></div>
+      <div class="af-group"><label>비밀번호</label><input type="password" id="l-pass" placeholder="비밀번호 입력" onkeydown="if(event.key==='Enter')doLogin()"></div>
+      <div class="remember-row">
+        <input type="checkbox" id="remember-me" checked>
+        <label for="remember-me">로그인 정보 저장</label>
+      </div>
+      <button class="btn-auth" onclick="doLogin()">로그인</button>
+      <div class="auth-err" id="login-err"></div>
+    </div>
+    <div class="auth-form" id="form-register">
+      <div class="af-group"><label>닉네임</label><input type="text" id="r-nick" placeholder="게임 내 닉네임" maxlength="12"></div>
+      <div class="af-group"><label>아이디 (이메일)</label><input type="email" id="r-email" placeholder="example@email.com"></div>
+      <div class="af-group"><label>비밀번호 (6자 이상)</label><input type="password" id="r-pass" placeholder="비밀번호 입력" onkeydown="if(event.key==='Enter')doRegister()"></div>
+      <button class="btn-auth" onclick="doRegister()">회원가입</button>
+      <div class="auth-err" id="register-err"></div>
+    </div>
+  </div>
+</div>
+
+<!-- APP -->
+<div class="app" id="app">
+  <aside class="sidebar" id="sidebar">
+    <div class="sb-logo">레이드 현황</div>
+    <nav class="sb-nav">
+      <div class="sb-section">모집 현황</div>
+      <button class="sb-item active" id="nav-all" onclick="navTo('all')">
+        <span class="sb-icon">🗂</span> 전체
+        <span class="sb-badge" id="badge-all">0</span>
+      </button>
+      <button class="sb-item" id="nav-recruiting" onclick="navTo('recruiting')" >
+        <span class="sb-icon">🟢</span> 모집 중
+        <span class="sb-badge" id="badge-rec">0</span>
+        <span class="sb-arrow" id="arrow-rec">▾</span>
+      </button>
+      <div class="sb-sub open" id="sb-sub-recruiting"></div>
+      <button class="sb-item full-item" id="nav-full" onclick="navTo('full')">
+        <span class="sb-icon">🔴</span> 마감
+        <span class="sb-badge" id="badge-full">0</span>
+        <span class="sb-arrow" id="arrow-full">▾</span>
+      </button>
+      <div class="sb-sub open" id="sb-sub-full"></div>
+      <div class="sb-divider"></div>
+      <button class="sb-item done-item" id="nav-done" onclick="navTo('done')">
+        <span class="sb-icon">✅</span> 레이드완료
+        <span class="sb-badge" id="badge-done">0</span>
+      </button>
+      <div class="sb-divider" id="settings-divider" style="display:none;"></div>
+      <button class="sb-item" id="nav-settings" onclick="openSettings()" style="display:none;">
+        <span class="sb-icon">⚙️</span> 설정
+      </button>
+    </nav>
+    <div id="sb-bottom-guest" class="sb-guest">
+      <div class="sb-guest-txt">로그인하면 레이드에 참여할 수 있어요</div>
+      <button class="btn-sb-login" onclick="openAuthModal()">로그인 / 회원가입</button>
+    </div>
+    <div id="sb-bottom-user" class="sb-user" style="display:none;">
+      <div class="sync-row">
+        <span class="sync-dot" id="sync-dot"></span>
+        <span class="sync-label" id="sync-label">연결 중</span>
+      </div>
+      <div class="sb-user-nick" id="sb-nick">-</div>
+      <div class="sb-user-email" id="sb-email">-</div>
+      <button class="btn-logout" onclick="doLogout()">로그아웃</button>
+    </div>
+  </aside>
+
+  <div class="content">
+    <div class="topbar">
+      <div style="display:flex;align-items:center;gap:10px;">
+        <button class="mobile-menu-btn" onclick="toggleSidebar()">☰</button>
+        <span class="topbar-title" id="topbar-title">전체 레이드</span>
+      </div>
+      <div class="topbar-actions">
+        <button class="btn-top btn-secondary" id="topbar-login-btn" onclick="openAuthModal()" style="display:none;">로그인 / 회원가입</button>
+        <button class="btn-top btn-primary"   id="topbar-create-btn" onclick="openCreate()" style="display:none;">＋ 레이드 생성</button>
+      </div>
+    </div>
+
+    <div class="page active" id="page-all"        style="background-image:radial-gradient(ellipse 80% 50% at 20% -10%,rgba(91,110,245,.07) 0%,transparent 60%);"><div id="content-all"></div></div>
+    <div class="page"        id="page-recruiting"  style="background-image:radial-gradient(ellipse 80% 50% at 20% -10%,rgba(62,207,142,.06) 0%,transparent 60%);"><div id="content-recruiting"></div></div>
+    <div class="page"        id="page-full"        style="background-image:radial-gradient(ellipse 80% 50% at 20% -10%,rgba(232,85,85,.06) 0%,transparent 60%);"><div id="content-full"></div></div>
+    <div class="page"        id="page-done"><div id="content-done"></div></div>
+    <div class="page"        id="page-sub"><div id="content-sub"></div></div>
+  </div>
+</div>
+
+<!-- CREATE / EDIT MODAL -->
+<div class="modal-overlay" id="create-modal">
+  <div class="modal" style="max-width:440px;">
+    <div class="modal-title" id="create-modal-title">⚔️ 레이드 생성</div>
+    <div class="form-group"><label>레이드 이름</label><select id="f-name" onchange="onRaidNameChange(this.value)"></select></div>
+    <div class="form-row">
+      <div class="form-group"><label>날짜</label><input type="date" id="f-date"></div>
+      <div class="form-group"><label>시간</label><input type="time" id="f-time" value="23:00"></div>
+    </div>
+    <div class="form-group"><label>난이도</label><select id="f-diff"></select></div>
+    <div class="form-row">
+      <div class="form-group"><label>딜러 인원</label><select id="f-dealer"></select></div>
+      <div class="form-group"><label>서포터 인원</label><select id="f-support"></select></div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn-mcancel" onclick="closeCreate()">취소</button>
+      <button class="btn-confirm" id="create-confirm-btn" onclick="submitRaid()">생성</button>
+    </div>
+  </div>
+</div>
+
+<!-- SETTINGS MODAL -->
+<div class="modal-overlay" id="settings-modal">
+  <div class="modal settings-modal">
+    <div class="modal-title">⚙️ 콤보박스 설정</div>
+    <div class="stabs">
+      <button class="stab active" onclick="switchStab('raids',this)">레이드 이름</button>
+      <button class="stab" onclick="switchStab('diffs',this)">난이도</button>
+      <button class="stab" onclick="switchStab('counts',this)">인원 수</button>
+      <button class="stab" onclick="switchStab('colors',this)">글자색</button>
+    </div>
+    <div class="stab-panel active" id="stab-raids">
+      <div class="s-section">
+        <div class="s-section-title">레이드 이름 목록 (드래그로 순서 변경)</div>
+        <div class="tag-list" id="st-raid-tags"></div>
+        <div class="tag-add-row">
+          <input type="text" id="st-raid-input" placeholder="새 레이드 이름" maxlength="30" onkeydown="if(event.key==='Enter')stAddRaid()">
+          <button class="btn-add-tag" onclick="stAddRaid()">＋ 추가</button>
+        </div>
+      </div>
+    </div>
+    <div class="stab-panel" id="stab-diffs">
+      <div class="s-section">
+        <div class="s-section-title">레이드 선택</div>
+        <select id="st-diff-raid-select" onchange="stSelectRaidForDiff(this.value)"
+          style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:8px;
+          padding:9px 12px;color:var(--text);font-size:14px;font-family:'Noto Sans KR',sans-serif;outline:none;margin-bottom:16px;"></select>
+        <div class="s-section-title" style="margin-top:8px;">난이도 목록 (드래그로 순서 변경)</div>
+        <div class="tag-list" id="st-diff-tags"></div>
+        <div class="tag-add-row">
+          <input type="text" id="st-diff-input" placeholder="새 난이도 (예: 헬)" maxlength="10" onkeydown="if(event.key==='Enter')stAddDiff()">
+          <button class="btn-add-tag" onclick="stAddDiff()">＋ 추가</button>
+        </div>
+      </div>
+    </div>
+    <div class="stab-panel" id="stab-counts">
+      <div class="s-section">
+        <div class="s-section-title">모집 인원 기본값</div>
+        <div class="count-setting-row">
+          <span class="count-setting-label">딜러 최대 인원</span>
+          <div class="count-stepper">
+            <button class="step-btn" onclick="stepCount('dealer',-1)">−</button>
+            <span class="step-val" id="dealer-val">4</span>
+            <button class="step-btn" onclick="stepCount('dealer',1)">＋</button>
+          </div>
+        </div>
+        <div class="count-setting-row">
+          <span class="count-setting-label">서포터 최대 인원</span>
+          <div class="count-stepper">
+            <button class="step-btn" onclick="stepCount('support',-1)">−</button>
+            <span class="step-val" id="support-val">2</span>
+            <button class="step-btn" onclick="stepCount('support',1)">＋</button>
+          </div>
+        </div>
+        <div style="font-size:12px;color:var(--text3);margin-top:4px;">※ 레이드 생성 시 1~최대 범위에서 선택 가능합니다.</div>
+      </div>
+    </div>
+    <div class="stab-panel" id="stab-colors">
+      <div class="s-section">
+        <div class="s-section-title">레이드 이름 글자색</div>
+        <div id="color-raid-list"></div>
+      </div>
+      <div class="s-section">
+        <div class="s-section-title">난이도 글자색</div>
+        <div id="color-diff-list"></div>
+      </div>
+    </div>
+    <div class="modal-actions" style="margin-top:4px;">
+      <button class="btn-mcancel" onclick="closeSettings()">닫기</button>
+      <button class="btn-confirm" onclick="saveSettings()">저장</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword,
+  signOut, onAuthStateChanged, updateProfile,
+  setPersistence, browserLocalPersistence, browserSessionPersistence }
+  from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+import { getDatabase, ref, onValue, push, remove, set, update }
+  from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyCkIDb1hv02lCDuvekeDpi-1wYapA9PAy0",
+  authDomain: "lostark-plan.firebaseapp.com",
+  databaseURL: "https://lostark-plan-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId: "lostark-plan",
+  storageBucket: "lostark-plan.firebasestorage.app",
+  messagingSenderId: "226335519929",
+  appId: "1:226335519929:web:99a59a0a11d61372c4d768"
+};
+
+// ── 관리자 이메일 설정 ──
+const ADMIN_EMAIL = "admin@raidhub.com"; // ← 본인 이메일로 변경
+
+const fbApp = initializeApp(firebaseConfig);
+const auth  = getAuth(fbApp);
+const db    = getDatabase(fbApp);
+
+const icons = ['⚔️','🔥','💀','🌑','🌊','⚡','🐉','💎'];
+const DEFAULT = {
+  raidNames:['카제로스 종막','에기르','베히모스','카양겔','아브렐슈드','일리아칸'],
+  // raidDiffs: { '레이드이름': ['노말','하드',...] }
+  raidDiffs:{
+    '카제로스 종막':['노말','하드','헬'],
+    '에기르':['노말','하드'],
+    '베히모스':['노말','하드'],
+    '카양겔':['노말','하드'],
+    '아브렐슈드':['노말','하드','헬'],
+    '일리아칸':['노말','하드','헬'],
+  },
+  maxDealer:4, maxSupport:2,
+  colors:{ raidNames:{}, diffs:{} }
+};
+
+let cfg = JSON.parse(JSON.stringify(DEFAULT));
+let cfgDraft = null;
+let raidsData = {};
+let currentUser = null;
+let currentPage = 'all';
+let currentSubFilter = null; // { type: 'recruiting'|'full', name: string }
+let editingRaidId = null;
+
+const isAdmin    = () => currentUser?.email === ADMIN_EMAIL;
+const isLoggedIn = () => !!currentUser;
+const getD  = r => r.dealers  ? Object.values(r.dealers)  : [];
+const getS  = r => r.supports ? Object.values(r.supports) : [];
+const isFull= r => getD(r).length >= r.maxDealer && getS(r).length >= r.maxSupport;
+const isDone= r => !!r.done;
+
+// ── localStorage 안전 wrapper ──
+const storage = {
+  get(k){ try{ return localStorage.getItem(k); }catch(e){ return null; } },
+  set(k,v){ try{ localStorage.setItem(k,v); }catch(e){} },
+  remove(k){ try{ localStorage.removeItem(k); }catch(e){} }
+};
+
+function showToast(msg, type=''){
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.className = 'toast show'+(type?' '+type:'');
+  clearTimeout(window._tt); window._tt = setTimeout(()=>t.className='toast', 2600);
+}
+window.showToast = showToast;
+
+// ── Auth state ──
+onAuthStateChanged(auth, user => {
+  const ls = document.getElementById('loading-screen');
+  if(ls){ ls.classList.add('hide'); setTimeout(()=>ls.remove(), 500); }
+  currentUser = user;
+  updateUIForAuth();
+  if(!window._listenersStarted){ startListeners(); window._listenersStarted=true; }
+});
+
+function updateUIForAuth(){
+  const li = isLoggedIn();
+  document.getElementById('topbar-login-btn').style.display  = li ? 'none' : 'flex';
+  document.getElementById('topbar-create-btn').style.display = li ? 'flex' : 'none';
+  document.getElementById('settings-divider').style.display = li ? 'block' : 'none';
+  document.getElementById('nav-settings').style.display     = li ? 'flex'  : 'none';
+  document.getElementById('sb-bottom-guest').style.display   = li ? 'none' : 'block';
+  document.getElementById('sb-bottom-user').style.display    = li ? 'block' : 'none';
+  if(li){
+    document.getElementById('sb-nick').textContent  = currentUser.displayName||'닉네임없음';
+    document.getElementById('sb-email').textContent = currentUser.email;
+  }
+  renderAll();
+}
+
+function startListeners(){
+  onValue(ref(db,'raids'), snap=>{
+    raidsData = snap.val()||{};
+    renderAll();
+    document.getElementById('sync-dot').classList.add('live');
+    document.getElementById('sync-label').textContent='실시간 연결';
+  });
+  onValue(ref(db,'settings'), snap=>{
+    const v=snap.val();
+    if(v) cfg={
+      raidNames: v.raidNames||DEFAULT.raidNames,
+      raidDiffs: v.raidDiffs||DEFAULT.raidDiffs,
+      maxDealer: v.maxDealer??DEFAULT.maxDealer,
+      maxSupport:v.maxSupport??DEFAULT.maxSupport,
+      colors:{
+        raidNames: (v.colors&&v.colors.raidNames) ? v.colors.raidNames : {},
+        diffs:     (v.colors&&v.colors.diffs)     ? v.colors.diffs     : {}
+      }
+    };
+    rebuildSidebar();
+    renderAll(); // re-render cards so color changes apply immediately
+  });
+}
+
+// ── AUTH ──
+window.openAuthModal  = () => document.getElementById('auth-modal').classList.add('open');
+window.closeAuthModal = () => document.getElementById('auth-modal').classList.remove('open');
+document.getElementById('auth-modal').addEventListener('click', e=>{ if(e.target===e.currentTarget) closeAuthModal(); });
+
+window.switchAuth = (tab, el) => {
+  document.querySelectorAll('.auth-tab').forEach(b=>b.classList.remove('active'));
+  document.querySelectorAll('.auth-form').forEach(f=>f.classList.remove('active'));
+  el.classList.add('active');
+  document.getElementById('form-'+tab).classList.add('active');
+  document.getElementById('login-err').textContent='';
+  document.getElementById('register-err').textContent='';
+};
+
+window.doLogin = async () => {
+  const email   = document.getElementById('l-email').value.trim();
+  const pass    = document.getElementById('l-pass').value;
+  const remember= document.getElementById('remember-me').checked;
+  if(!email||!pass){ document.getElementById('login-err').textContent='이메일과 비밀번호를 입력해주세요.'; return; }
+  try{
+    await setPersistence(auth, remember ? browserLocalPersistence : browserSessionPersistence);
+    await signInWithEmailAndPassword(auth, email, pass);
+    closeAuthModal();
+    showToast('✓ 로그인 되었습니다','success');
+  } catch(e){
+    const m={'auth/user-not-found':'존재하지 않는 계정입니다.','auth/wrong-password':'비밀번호가 틀렸습니다.',
+      'auth/invalid-email':'이메일 형식이 올바르지 않습니다.','auth/invalid-credential':'이메일 또는 비밀번호가 올바르지 않습니다.'};
+    document.getElementById('login-err').textContent=m[e.code]||e.message;
+  }
+};
+
+window.doRegister = async () => {
+  const nick=document.getElementById('r-nick').value.trim();
+  const email=document.getElementById('r-email').value.trim();
+  const pass=document.getElementById('r-pass').value;
+  if(!nick){document.getElementById('register-err').textContent='닉네임을 입력해주세요.';return;}
+  if(!email){document.getElementById('register-err').textContent='이메일을 입력해주세요.';return;}
+  if(pass.length<6){document.getElementById('register-err').textContent='비밀번호는 6자 이상이어야 합니다.';return;}
+  try{
+    const cred=await createUserWithEmailAndPassword(auth,email,pass);
+    await updateProfile(cred.user,{displayName:nick});
+    await set(ref(db,`users/${cred.user.uid}`),{nick,email,createdAt:Date.now()});
+    closeAuthModal();
+    showToast('✓ 회원가입 완료!','success');
+  } catch(e){
+    const m={'auth/email-already-in-use':'이미 사용 중인 이메일입니다.','auth/invalid-email':'이메일 형식이 올바르지 않습니다.'};
+    document.getElementById('register-err').textContent=m[e.code]||e.message;
+  }
+};
+
+window.doLogout = async () => { await signOut(auth); showToast('로그아웃 되었습니다'); };
+
+// ── NAV ──
+window.navTo = (page, subType, raidName) => {
+  // collapse toggle: clicking 모집중/마감 parent also toggles sub-menu
+  if((page==='recruiting'||page==='full') && !subType){
+    const sub = document.getElementById(`sb-sub-${page==='recruiting'?'recruiting':'full'}`);
+    const arrow = document.getElementById(`arrow-${page==='recruiting'?'rec':'full'}`);
+    const navBtn = document.getElementById(`nav-${page}`);
+    const isOpen = sub.classList.contains('open');
+    sub.classList.toggle('open', !isOpen);
+    if(arrow) arrow.textContent = isOpen ? '▸' : '▾';
+    navBtn.classList.toggle('collapsed', isOpen);
+  }
+  currentPage = page;
+  currentSubFilter = (subType && raidName) ? {type:subType, name:raidName} : null;
+  document.querySelectorAll('.sb-item').forEach(b=>b.classList.remove('active'));
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+
+  const titles = {all:'전체 레이드', recruiting:'모집 중', full:'마감', done:'레이드완료'};
+  let title = currentSubFilter ? `${currentSubFilter.type==='full'?'마감':'모집 중'} · ${raidName}` : (titles[page]||page);
+  document.getElementById('topbar-title').textContent = title;
+
+  if(currentSubFilter){
+    document.getElementById(`nav-${subType}`).classList.add('active');
+    document.querySelectorAll('.sb-sub-item').forEach(b=>{ if(b.dataset.key===`${subType}:${raidName}`) b.classList.add('active'); });
+    document.getElementById('page-sub').classList.add('active');
+    renderSubPage();
+  } else {
+    const el=document.getElementById('nav-'+page);
+    if(el) el.classList.add('active');
+    document.getElementById('page-'+page).classList.add('active');
+    renderPage(page);
+  }
+  document.getElementById('sidebar').classList.remove('open');
+};
+
+window.toggleSidebar = () => document.getElementById('sidebar').classList.toggle('open');
+
+// ── RENDER ──
+function renderAll(){
+  rebuildSidebar();
+  if(currentSubFilter) renderSubPage();
+  else renderPage(currentPage);
+}
+
+function rebuildSidebar(){
+  const entries = Object.entries(raidsData);
+  const notDone = entries.filter(([,r])=>!isDone(r));
+  const recEntries  = notDone.filter(([,r])=>!isFull(r));
+  const fullEntries = notDone.filter(([,r])=>isFull(r));
+  const doneEntries = entries.filter(([,r])=>isDone(r));
+
+  document.getElementById('badge-all').textContent  = entries.length;
+  document.getElementById('badge-rec').textContent  = recEntries.length;
+  document.getElementById('badge-full').textContent = fullEntries.length;
+  document.getElementById('badge-done').textContent = doneEntries.length;
+
+  // sub-menu: 모집 중 by raid name
+  const recCounts={};
+  recEntries.forEach(([,r])=>{ recCounts[r.name]=(recCounts[r.name]||0)+1; });
+  document.getElementById('sb-sub-recruiting').innerHTML =
+    cfg.raidNames.filter(n=>recCounts[n]>0).map(n=>`
+      <button class="sb-item sb-sub-item ${currentSubFilter?.type==='recruiting'&&currentSubFilter?.name===n?'active':''}"
+        data-key="recruiting:${n}" onclick="navTo('sub','recruiting','${n.replace(/'/g,"\\'")}')">
+        <span class="sb-icon">▸</span>${n}
+        <span class="sb-badge">${recCounts[n]}</span>
+      </button>`).join('');
+
+  // sub-menu: 마감 by raid name
+  const fullCounts={};
+  fullEntries.forEach(([,r])=>{ fullCounts[r.name]=(fullCounts[r.name]||0)+1; });
+  document.getElementById('sb-sub-full').innerHTML =
+    cfg.raidNames.filter(n=>fullCounts[n]>0).map(n=>`
+      <button class="sb-item sb-sub-item full-item ${currentSubFilter?.type==='full'&&currentSubFilter?.name===n?'active':''}"
+        data-key="full:${n}" onclick="navTo('sub','full','${n.replace(/'/g,"\\'")}')">
+        <span class="sb-icon">▸</span>${n}
+        <span class="sb-badge">${fullCounts[n]}</span>
+      </button>`).join('');
+}
+
+function renderPage(page){
+  if(page==='all'){
+    const entries=Object.entries(raidsData).sort((a,b)=>b[1].createdAt-a[1].createdAt);
+    const rec  = entries.filter(([,r])=>!isDone(r)&&!isFull(r));
+    const full = entries.filter(([,r])=>!isDone(r)&&isFull(r));
+    const done = entries.filter(([,r])=>isDone(r));
+    let html='';
+    if(rec.length)  html+=section('🟢 모집 중', rec, '');
+    if(full.length) html+=section('🔴 마감', full, 'red');
+    if(done.length) html+=section('✅ 레이드완료', done, 'green');
+    if(!entries.length) html=`<div class="empty-state"><span class="empty-icon">🎮</span>레이드가 없습니다.</div>`;
+    document.getElementById('content-all').innerHTML=html;
+  }
+  else if(page==='recruiting'){
+    const entries=Object.entries(raidsData).filter(([,r])=>!isDone(r)&&!isFull(r)).sort((a,b)=>b[1].createdAt-a[1].createdAt);
+    document.getElementById('content-recruiting').innerHTML=
+      entries.length ? groupByName(entries) : `<div class="empty-state"><span class="empty-icon">🟢</span>모집 중인 레이드가 없습니다.</div>`;
+  }
+  else if(page==='full'){
+    const entries=Object.entries(raidsData).filter(([,r])=>!isDone(r)&&isFull(r)).sort((a,b)=>b[1].createdAt-a[1].createdAt);
+    document.getElementById('content-full').innerHTML=
+      entries.length ? groupByName(entries) : `<div class="empty-state"><span class="empty-icon">🔴</span>마감된 레이드가 없습니다.</div>`;
+  }
+  else if(page==='done'){
+    const entries=Object.entries(raidsData).filter(([,r])=>isDone(r)).sort((a,b)=>b[1].createdAt-a[1].createdAt);
+    document.getElementById('content-done').innerHTML=
+      entries.length ? `<div class="raids-grid">${entries.map(([id,r])=>cardHTML(id,r)).join('')}</div>`
+      : `<div class="empty-state"><span class="empty-icon">✅</span>레이드완료 내역이 없습니다.</div>`;
+  }
+}
+
+function renderSubPage(){
+  if(!currentSubFilter){ renderPage(currentPage); return; }
+  const {type, name} = currentSubFilter;
+  const entries = Object.entries(raidsData)
+    .filter(([,r])=> r.name===name && !isDone(r) && (type==='full'?isFull(r):!isFull(r)))
+    .sort((a,b)=>b[1].createdAt-a[1].createdAt);
+  document.getElementById('content-sub').innerHTML=
+    entries.length ? `<div class="raids-grid">${entries.map(([id,r])=>cardHTML(id,r)).join('')}</div>`
+    : `<div class="empty-state"><span class="empty-icon">${type==='full'?'🔴':'🟢'}</span>${name} ${type==='full'?'마감':'모집 중'}인 레이드가 없습니다.</div>`;
+}
+
+function section(title, entries, badgeClass){
+  return `<div class="section-hd" style="margin-top:${title.startsWith('🟢')?'4px':'24px'};">
+    <h2>${title}</h2><span class="badge ${badgeClass}">${entries.length}</span>
+  </div><div class="raids-grid">${entries.map(([id,r])=>cardHTML(id,r)).join('')}</div>`;
+}
+
+function groupByName(entries){
+  const groups={};
+  entries.forEach(([id,r])=>{ (groups[r.name]=groups[r.name]||[]).push([id,r]); });
+  let html='';
+  [...cfg.raidNames,...Object.keys(groups).filter(n=>!cfg.raidNames.includes(n))].forEach(n=>{
+    if(!groups[n]) return;
+    html+=`<div class="section-hd" style="margin-top:${html?'24px':'4px'};"><h2>${n}</h2><span class="badge">${groups[n].length}</span></div>
+    <div class="raids-grid">${groups[n].map(([id,r])=>cardHTML(id,r)).join('')}</div>`;
+  });
+  return html;
+}
+
+// ── CARD ──
+function cardHTML(id, r){
+  const myNick=currentUser?.displayName||'';
+  const dl=getD(r), sp=getS(r);
+  const total=dl.length+sp.length, max=r.maxDealer+r.maxSupport;
+  const full=isFull(r), done=isDone(r);
+  const pct=Math.min(100,Math.round(total/max*100));
+  const isMeIn=dl.includes(myNick)||sp.includes(myNick);
+  const li=isLoggedIn(), admin=isAdmin();
+
+  const dSlots=[...Array(r.maxDealer)].map((_,i)=>dl[i]
+    ?`<div class="member-tag${dl[i]===myNick?' me':''}"><span class="role-dot dealer"></span>${dl[i]}</div>`
+    :`<div class="slot-empty">— 빈자리</div>`).join('');
+  const sSlots=[...Array(r.maxSupport)].map((_,i)=>sp[i]
+    ?`<div class="member-tag${sp[i]===myNick?' me':''}"><span class="role-dot support"></span>${sp[i]}</div>`
+    :`<div class="slot-empty">— 빈자리</div>`).join('');
+
+  const prog=done?'done-fill':pct>=100?'done-fill':pct>=75?'danger':'';
+  const sc=done?'done':full?'full':'recruiting';
+  const statusLabel=done?'레이드완료':full?'마감':'모집 중';
+
+  const raidColor = (cfg.colors?.raidNames||{})[r.name] || '';
+  const diffColor = (cfg.colors?.diffs||{})[r.diff] || '';
+
+  // diff badge: custom color overrides default accent
+  const diffStyle = diffColor
+    ? `style="color:${diffColor};background:${diffColor}22;border-color:${diffColor}66;"`
+    : `style=""`;
+
+  const mgmtBtns=li?`
+    <button class="hdr-btn hdr-edit"   onclick="window._edit('${id}')">수정</button>
+    <button class="hdr-btn hdr-delete" onclick="window._delete('${id}')">삭제</button>
+    ${done
+      ?`<button class="hdr-btn hdr-undone" ${admin?'':'disabled title="관리자만 가능"'} onclick="window._toggleDone('${id}',false)">↩ 되돌리기</button>`
+      :`<button class="hdr-btn hdr-done" onclick="window._toggleDone('${id}',true)">완료</button>`
+    }`:'';
+
+  const actionRow=done?''
+    :!li?`<div class="login-required-msg">참여하려면 <a onclick="openAuthModal()">로그인</a>이 필요합니다</div>`
+    :`<div class="card-actions">
+      <button class="action-btn btn-dealer"  ${dl.length>=r.maxDealer||isMeIn?'disabled':''} onclick="window._join('${id}','dealer')">⚔️ 딜러 신청</button>
+      <button class="action-btn btn-support" ${sp.length>=r.maxSupport||isMeIn?'disabled':''} onclick="window._join('${id}','support')">🛡 서폿 신청</button>
+      <button class="action-btn btn-cancel"  ${!isMeIn?'disabled':''} onclick="window._leave('${id}')">신청 취소</button>
+    </div>`;
+
+  return `
+  <div class="raid-card ${done?'done-card':full?'full-card':''}">
+    <div class="card-header">
+      <div class="card-title-group">
+        <span class="card-title" ${raidColor?`style="color:${raidColor}"`:''}>${r.icon||'⚔️'} ${r.name}</span>
+        <span class="diff-badge" ${diffStyle}>${r.diff}</span>
+        <span class="card-status ${sc}">${statusLabel}</span>
+      </div>
+      <div class="card-header-right">
+        ${mgmtBtns}
+      </div>
+    </div>
+    <div class="card-meta">
+      <div class="meta-item"><span class="meta-label">출발 시간</span><span class="meta-value">${r.date} ${r.time}</span></div>
+      <div class="meta-item"><span class="meta-label">인원</span><span class="meta-value">${total}/${max}</span></div>
+    </div>
+    <div class="progress-wrap">
+      <div class="progress-label"><span>모집 현황</span><span>${total}/${max}명</span></div>
+      <div class="progress-bar"><div class="progress-fill ${prog}" style="width:${pct}%"></div></div>
+    </div>
+    <div class="roles-section">
+      <div class="role-col">
+        <div class="role-header dealer">딜러 <span class="count-pill">${dl.length}/${r.maxDealer}</span></div>
+        <div class="member-list">${dSlots}</div>
+      </div>
+      <div class="role-col">
+        <div class="role-header support">서포터 <span class="count-pill">${sp.length}/${r.maxSupport}</span></div>
+        <div class="member-list">${sSlots}</div>
+      </div>
+    </div>
+    ${actionRow}
+  </div>`;
+}
+
+// ── ACTIONS ──
+window._join = async (id, role) => {
+  if(!isLoggedIn()){ openAuthModal(); return; }
+  const myNick=currentUser.displayName;
+  const r=raidsData[id]; if(!r) return;
+  const dl=getD(r), sp=getS(r);
+  if(dl.includes(myNick)||sp.includes(myNick)){ showToast('이미 참여 중입니다','error'); return; }
+  try{
+    if(role==='dealer'){
+      if(dl.length>=r.maxDealer){ showToast('딜러 자리가 꽉 찼습니다','error'); return; }
+      await push(ref(db,`raids/${id}/dealers`), myNick);
+      showToast('⚔️ 딜러 신청 완료!','success');
+    } else {
+      if(sp.length>=r.maxSupport){ showToast('서포터 자리가 꽉 찼습니다','error'); return; }
+      await push(ref(db,`raids/${id}/supports`), myNick);
+      showToast('🛡 서폿 신청 완료!','success');
+    }
+  } catch(e){ showToast('오류: '+e.message,'error'); }
+};
+
+window._leave = async (id) => {
+  if(!isLoggedIn()) return;
+  const myNick=currentUser.displayName;
+  const r=raidsData[id]; if(!r) return;
+  try{
+    if(r.dealers)  for(const [k,v] of Object.entries(r.dealers))  if(v===myNick) await remove(ref(db,`raids/${id}/dealers/${k}`));
+    if(r.supports) for(const [k,v] of Object.entries(r.supports)) if(v===myNick) await remove(ref(db,`raids/${id}/supports/${k}`));
+    showToast('신청이 취소되었습니다');
+  } catch(e){ showToast('오류: '+e.message,'error'); }
+};
+
+window._toggleDone = async (id, done) => {
+  if(!done && !isAdmin()){ showToast('관리자만 되돌릴 수 있습니다','error'); return; }
+  try{
+    await update(ref(db,`raids/${id}`),{done});
+    showToast(done?'✅ 레이드완료 처리되었습니다':'↩ 모집 중으로 변경되었습니다','success');
+  } catch(e){ showToast('오류: '+e.message,'error'); }
+};
+
+window._delete = async (id) => {
+  if(!isLoggedIn()){ openAuthModal(); return; }
+  if(!confirm('이 레이드를 삭제하시겠습니까?')) return;
+  try{ await remove(ref(db,`raids/${id}`)); showToast('삭제되었습니다'); }
+  catch(e){ showToast('오류: '+e.message,'error'); }
+};
+
+window._edit = (id) => {
+  if(!isLoggedIn()){ openAuthModal(); return; }
+  const r=raidsData[id]; if(!r) return;
+  editingRaidId=id;
+  document.getElementById('create-modal-title').textContent='✏️ 레이드 수정';
+  document.getElementById('create-confirm-btn').textContent='수정 완료';
+  populateCreateSelects(r);
+  document.getElementById('create-modal').classList.add('open');
+};
+
+// ── CREATE ──
+function getDiffsForRaid(raidName){
+  return (cfg.raidDiffs&&cfg.raidDiffs[raidName]) || ['노말','하드'];
+}
+
+function populateCreateSelects(existing){
+  const sel=(id,items,cur)=>{
+    document.getElementById(id).innerHTML=items.map(v=>`<option value="${v}"${v===cur?' selected':''}>${v}</option>`).join('');
+  };
+  sel('f-name', cfg.raidNames, existing?.name);
+  // 선택된 레이드에 맞는 난이도 로드
+  const selectedRaid = existing?.name || cfg.raidNames[0];
+  sel('f-diff', getDiffsForRaid(selectedRaid), existing?.diff);
+  sel('f-dealer',[...Array(cfg.maxDealer)].map((_,i)=>`${i+1}명`),existing?`${existing.maxDealer}명`:null);
+  sel('f-support',[...Array(cfg.maxSupport)].map((_,i)=>`${i+1}명`),existing?`${existing.maxSupport}명`:null);
+  document.getElementById('f-date').value=new Date().toISOString().split('T')[0];
+  document.getElementById('f-time').value=existing?.time||'23:00';
+}
+
+window.onRaidNameChange = (raidName) => {
+  const diffs = getDiffsForRaid(raidName);
+  document.getElementById('f-diff').innerHTML =
+    diffs.map(v=>`<option value="${v}">${v}</option>`).join('');
+};
+
+window.openCreate=()=>{
+  if(!isLoggedIn()){ openAuthModal(); return; }
+  editingRaidId=null;
+  document.getElementById('create-modal-title').textContent='⚔️ 레이드 생성';
+  document.getElementById('create-confirm-btn').textContent='생성';
+  populateCreateSelects(null);
+  document.getElementById('create-modal').classList.add('open');
+};
+window.closeCreate=()=>{ document.getElementById('create-modal').classList.remove('open'); editingRaidId=null; };
+document.getElementById('create-modal').addEventListener('click',e=>{ if(e.target===e.currentTarget) closeCreate(); });
+
+window.submitRaid=async()=>{
+  const name=document.getElementById('f-name').value;
+  const date=document.getElementById('f-date').value;
+  const time=document.getElementById('f-time').value;
+  const diff=document.getElementById('f-diff').value;
+  const maxDealer=parseInt(document.getElementById('f-dealer').value);
+  const maxSupport=parseInt(document.getElementById('f-support').value);
+  if(!date){ showToast('날짜를 선택해주세요','error'); return; }
+  const d=new Date(date); const days=['일','월','화','수','목','금','토'];
+  const dateStr=`${d.getMonth()+1}/${d.getDate()}(${days[d.getDay()]})`;
+  try{
+    if(editingRaidId){
+      await update(ref(db,`raids/${editingRaidId}`),{name,date:dateStr,time,diff,maxDealer,maxSupport});
+      showToast('✓ 레이드가 수정되었습니다','success');
+    } else {
+      await push(ref(db,'raids'),{name,date:dateStr,time,diff,maxDealer,maxSupport,
+        done:false,createdAt:Date.now(),icon:icons[Math.floor(Math.random()*icons.length)],
+        createdBy:currentUser?.displayName||''});
+      showToast('✓ 레이드가 생성되었습니다!','success');
+    }
+    closeCreate();
+  } catch(e){ showToast((editingRaidId?'수정':'생성')+' 실패: '+e.message,'error'); }
+};
+
+// ── SETTINGS ──
+window.openSettings=()=>{
+  cfgDraft=JSON.parse(JSON.stringify(cfg));
+  if(!cfgDraft.colors) cfgDraft.colors={raidNames:{},diffs:{}};
+  if(!cfgDraft.raidDiffs) cfgDraft.raidDiffs={};
+  document.getElementById('dealer-val').textContent=cfgDraft.maxDealer;
+  document.getElementById('support-val').textContent=cfgDraft.maxSupport;
+  renderStTags();
+  renderDiffRaidSelect();
+  renderColorPickers();
+  document.getElementById('settings-modal').classList.add('open');
+};
+window.closeSettings=()=>document.getElementById('settings-modal').classList.remove('open');
+document.getElementById('settings-modal').addEventListener('click',e=>{ if(e.target===e.currentTarget) closeSettings(); });
+window.switchStab=(tab,el)=>{
+  document.querySelectorAll('.stab').forEach(b=>b.classList.remove('active'));
+  document.querySelectorAll('.stab-panel').forEach(p=>p.classList.remove('active'));
+  el.classList.add('active'); document.getElementById('stab-'+tab).classList.add('active');
+};
+function renderStTags(){
+  renderDraggableList('st-raid-tags',cfgDraft.raidNames,'raidNames');
+  renderDraggableList('st-diff-tags',cfgDraft.diffs,'diffs');
+}
+function renderDraggableList(containerId,items,key){
+  const el=document.getElementById(containerId);
+  if(!items||!items.length){ el.innerHTML='<span style="color:var(--text3);font-size:12px;">난이도 없음 — 아래에서 추가하세요</span>'; return; }
+  el.innerHTML=items.map((v,i)=>`
+    <div class="tag-item" draggable="true" data-index="${i}" data-key="${key}">
+      <span class="tag-drag">⠿</span><span class="tag-label">${v}</span>
+      <button class="tag-del" onclick="stDelItem('${key}',${i})">✕</button>
+    </div>`).join('');
+  initDrag(el,key);
+}
+window.stDelItem=(key,i)=>{
+  if(key==='__diffs__'){
+    if(_selectedDiffRaid) cfgDraft.raidDiffs[_selectedDiffRaid].splice(i,1);
+    renderDiffTagsForSelected();
+  } else {
+    cfgDraft[key].splice(i,1); renderStTags();
+  }
+};
+function initDrag(container,key){
+  let dragSrc=null;
+  container.querySelectorAll('.tag-item').forEach(item=>{
+    item.addEventListener('dragstart',e=>{dragSrc=item;item.classList.add('dragging');e.dataTransfer.effectAllowed='move';});
+    item.addEventListener('dragend',()=>{item.classList.remove('dragging');container.querySelectorAll('.tag-item').forEach(i=>i.classList.remove('drag-over'));});
+    item.addEventListener('dragover',e=>{e.preventDefault();container.querySelectorAll('.tag-item').forEach(i=>i.classList.remove('drag-over'));if(item!==dragSrc)item.classList.add('drag-over');});
+    item.addEventListener('drop',e=>{
+      e.preventDefault();
+      if(dragSrc&&dragSrc!==item){
+        const fi=parseInt(dragSrc.dataset.index),ti=parseInt(item.dataset.index);
+        let arr;
+        if(key==='__diffs__') arr=cfgDraft.raidDiffs[_selectedDiffRaid];
+        else arr=cfgDraft[key];
+        const [m]=arr.splice(fi,1); arr.splice(ti,0,m);
+        if(key==='__diffs__') renderDiffTagsForSelected();
+        else renderStTags();
+      }
+    });
+  });
+}
+window.stDel=(key,i)=>{ cfgDraft[key].splice(i,1); renderStTags(); };
+window.stAddRaid=()=>{
+  const inp=document.getElementById('st-raid-input'),v=inp.value.trim();
+  if(!v) return;
+  if(cfgDraft.raidNames.includes(v)){showToast('이미 있는 항목입니다','error');return;}
+  cfgDraft.raidNames.push(v);
+  if(!cfgDraft.raidDiffs[v]) cfgDraft.raidDiffs[v]=[];
+  inp.value=''; renderStTags(); renderDiffRaidSelect();
+};
+
+let _selectedDiffRaid = null;
+function renderDiffRaidSelect(){
+  const sel = document.getElementById('st-diff-raid-select');
+  if(!sel) return;
+  sel.innerHTML = cfgDraft.raidNames.map(n=>`<option value="${n}">${n}</option>`).join('');
+  // keep selection if possible
+  if(_selectedDiffRaid && cfgDraft.raidNames.includes(_selectedDiffRaid)){
+    sel.value = _selectedDiffRaid;
+  } else {
+    _selectedDiffRaid = cfgDraft.raidNames[0]||null;
+    sel.value = _selectedDiffRaid||'';
+  }
+  renderDiffTagsForSelected();
+}
+window.stSelectRaidForDiff = (name) => {
+  _selectedDiffRaid = name;
+  renderDiffTagsForSelected();
+};
+function renderDiffTagsForSelected(){
+  if(!_selectedDiffRaid) return;
+  if(!cfgDraft.raidDiffs[_selectedDiffRaid]) cfgDraft.raidDiffs[_selectedDiffRaid]=[];
+  renderDraggableList('st-diff-tags', cfgDraft.raidDiffs[_selectedDiffRaid], '__diffs__');
+}
+window.stAddDiff=()=>{
+  if(!_selectedDiffRaid){showToast('레이드를 먼저 선택해주세요','error');return;}
+  const inp=document.getElementById('st-diff-input'),v=inp.value.trim();
+  if(!v) return;
+  if(!cfgDraft.raidDiffs[_selectedDiffRaid]) cfgDraft.raidDiffs[_selectedDiffRaid]=[];
+  if(cfgDraft.raidDiffs[_selectedDiffRaid].includes(v)){showToast('이미 있는 항목입니다','error');return;}
+  cfgDraft.raidDiffs[_selectedDiffRaid].push(v);
+  inp.value=''; renderDiffTagsForSelected();
+};
+window.stepCount=(type,delta)=>{ const key=type==='dealer'?'maxDealer':'maxSupport'; let val=(cfgDraft[key]||1)+delta; if(val<1)val=1;if(val>20)val=20; cfgDraft[key]=val; document.getElementById(type+'-val').textContent=val; };
+function renderColorPickers(){
+  const PALETTE = [
+    '#ffffff','#e8eaf0','#8b93a8',
+    '#e85555','#ff8c69','#e8a838',
+    '#3ecf8e','#3ecfcf','#5b6ef5',
+    '#a78bfa','#ec4899','#f472b6',
+    '#fbbf24','#84cc16','#06b6d4',
+  ];
+  // 전체 난이도: raidDiffs 에서 유니크하게 수집
+  const allDiffs=[...new Set(Object.values(cfgDraft.raidDiffs||{}).flat())];
+  const render=(containerId, items, colorKey)=>{
+    const el=document.getElementById(containerId);
+    if(!items.length){el.innerHTML='<span style="color:var(--text3);font-size:12px;">항목 없음</span>';return;}
+    const colors=cfgDraft.colors[colorKey]||{};
+    el.innerHTML=items.map(v=>{
+      const col=colors[v]||'';
+      const swatches=PALETTE.map(c=>`
+        <div onclick="setItemColor('${colorKey}','${v.replace(/'/g,"\\'")}','${c}')"
+          style="width:18px;height:18px;border-radius:4px;background:${c};cursor:pointer;flex-shrink:0;
+          box-sizing:border-box;border:2px solid ${col===c?'#fff':'transparent'};transition:transform .1s;"
+          onmouseover="this.style.transform='scale(1.2)'" onmouseout="this.style.transform='scale(1)'"></div>
+      `).join('');
+      return `<div style="display:flex;align-items:center;justify-content:space-between;gap:10px;
+          background:var(--surface2);border:1px solid var(--border);border-radius:10px;
+          padding:10px 14px;margin-bottom:8px;">
+        <span style="font-size:13px;font-weight:600;color:${col||'var(--text)'};min-width:80px;flex-shrink:0;">${v}</span>
+        <div style="display:flex;align-items:center;gap:4px;flex-wrap:wrap;justify-content:flex-end;">
+          ${swatches}
+          ${col?`<div onclick="clearItemColor('${colorKey}','${v.replace(/'/g,"\\'")}',this)"
+            style="width:18px;height:18px;border-radius:4px;background:var(--surface);border:1px solid var(--border);
+            cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:11px;color:var(--text3);flex-shrink:0;"
+            title="초기화">✕</div>`:''}
+        </div>
+      </div>`;
+    }).join('');
+  };
+  render('color-raid-list', cfgDraft.raidNames, 'raidNames');
+  render('color-diff-list', allDiffs, 'diffs');
+}
+window.setItemColor=(key,name,color)=>{
+  if(!cfgDraft.colors) cfgDraft.colors={raidNames:{},diffs:{}};
+  if(!cfgDraft.colors[key]) cfgDraft.colors[key]={};
+  cfgDraft.colors[key][name]=color;
+  renderColorPickers();
+};
+window.clearItemColor=(key,name)=>{
+  if(cfgDraft.colors?.[key]) delete cfgDraft.colors[key][name];
+  renderColorPickers();
+};
+window.saveSettings=async()=>{
+  if(!cfgDraft.raidNames.length){showToast('레이드 이름이 최소 1개 필요합니다','error');return;}
+  try{
+    await set(ref(db,'settings'),cfgDraft);
+    cfg=JSON.parse(JSON.stringify(cfgDraft));
+    rebuildSidebar();
+    closeSettings();
+    showToast('✓ 설정이 저장되었습니다','success');
+  } catch(e){ showToast('저장 실패: '+e.message,'error'); }
+};
+</script>
+</body>
+</html>
