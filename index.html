@@ -742,27 +742,27 @@ function renderPage(page){
     const full = entries.filter(([,r])=>!isDone(r)&&isFull(r));
     const done = entries.filter(([,r])=>isDone(r));
     let html='';
-    if(rec.length)  html+=section('🟢 모집 중', rec, '');
-    if(full.length) html+=section('🔴 마감', full, 'red');
-    if(done.length) html+=section('✅ 레이드완료', done, 'green');
+    if(rec.length)  html+=section('🔍 모집 중', rec, '');
+    if(full.length) html+=section('🔒 마감', full, 'red');
+    if(done.length) html+=section('⭐ 레이드완료', done, 'green');
     if(!entries.length) html=`<div class="empty-state"><span class="empty-icon">🎮</span>레이드가 없습니다.</div>`;
     document.getElementById('content-all').innerHTML=html;
   }
   else if(page==='recruiting'){
     const entries=Object.entries(raidsData).filter(([,r])=>!isDone(r)&&!isFull(r)).sort((a,b)=>b[1].createdAt-a[1].createdAt);
     document.getElementById('content-recruiting').innerHTML=
-      entries.length ? groupByName(entries) : `<div class="empty-state"><span class="empty-icon">🟢</span>모집 중인 레이드가 없습니다.</div>`;
+      entries.length ? groupByName(entries) : `<div class="empty-state"><span class="empty-icon">🔍</span>모집 중인 레이드가 없습니다.</div>`;
   }
   else if(page==='full'){
     const entries=Object.entries(raidsData).filter(([,r])=>!isDone(r)&&isFull(r)).sort((a,b)=>b[1].createdAt-a[1].createdAt);
     document.getElementById('content-full').innerHTML=
-      entries.length ? groupByName(entries) : `<div class="empty-state"><span class="empty-icon">🔴</span>마감된 레이드가 없습니다.</div>`;
+      entries.length ? groupByName(entries) : `<div class="empty-state"><span class="empty-icon">🔒</span>마감된 레이드가 없습니다.</div>`;
   }
   else if(page==='done'){
     const entries=Object.entries(raidsData).filter(([,r])=>isDone(r)).sort((a,b)=>b[1].createdAt-a[1].createdAt);
     document.getElementById('content-done').innerHTML=
       entries.length ? `<div class="raids-grid">${entries.map(([id,r])=>cardHTML(id,r)).join('')}</div>`
-      : `<div class="empty-state"><span class="empty-icon">✅</span>레이드완료 내역이 없습니다.</div>`;
+      : `<div class="empty-state"><span class="empty-icon">⭐</span>레이드완료 내역이 없습니다.</div>`;
   }
 }
 
@@ -774,7 +774,7 @@ function renderSubPage(){
     .sort((a,b)=>b[1].createdAt-a[1].createdAt);
   document.getElementById('content-sub').innerHTML=
     entries.length ? `<div class="raids-grid">${entries.map(([id,r])=>cardHTML(id,r)).join('')}</div>`
-    : `<div class="empty-state"><span class="empty-icon">${type==='full'?'🔴':'🟢'}</span>${name} ${type==='full'?'마감':'모집 중'}인 레이드가 없습니다.</div>`;
+    : `<div class="empty-state"><span class="empty-icon">${type==='full'?'🔒':'🔍'}</span>${name} ${type==='full'?'마감':'모집 중'}인 레이드가 없습니다.</div>`;
 }
 
 function section(title, entries, badgeClass){
@@ -909,7 +909,7 @@ window._toggleDone = async (id, done) => {
   if(!done && !isAdmin()){ showToast('관리자만 되돌릴 수 있습니다','error'); return; }
   try{
     await update(ref(db,`raids/${id}`),{done});
-    showToast(done?'✅ 레이드완료 처리되었습니다':'↩ 모집 중으로 변경되었습니다','success');
+    showToast(done?'⭐ 레이드완료 처리되었습니다':'↩ 모집 중으로 변경되었습니다','success');
   } catch(e){ showToast('오류: '+e.message,'error'); }
 };
 
