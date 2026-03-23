@@ -374,7 +374,7 @@ body{font-family:'Noto Sans KR',sans-serif;background:var(--bg);color:var(--text
     <div class="topbar">
       <div style="display:flex;align-items:center;gap:10px;">
         <button class="mobile-menu-btn" onclick="toggleSidebar()">☰</button>
-        <span class="topbar-title" id="topbar-title"><span id="topbar-icon">📋</span> 전체 레이드</span>
+        <span class="topbar-title" id="topbar-title"><span id="topbar-icon">📋</span> <span id="topbar-label">전체 레이드</span></span>
       </div>
       <div class="topbar-actions">
         <button class="btn-top btn-secondary" id="topbar-login-btn" onclick="openAuthModal()" style="display:none;">로그인 / 회원가입</button>
@@ -399,7 +399,7 @@ body{font-family:'Noto Sans KR',sans-serif;background:var(--bg);color:var(--text
       <div class="form-group"><label>날짜</label><input type="date" id="f-date"></div>
       <div class="form-group"><label>시간</label><input type="time" id="f-time" value="23:00"></div>
     </div>
-    <div class="form-group"><label>난이도</label><select id="f-diff"></select></div>
+    <div class="form-group" id="f-diff-group"><label>난이도</label><select id="f-diff"></select></div>
     <div class="form-row">
       <div class="form-group"><label>딜러 인원</label><select id="f-dealer"></select></div>
       <div class="form-group"><label>서포터 인원</label><select id="f-support"></select></div>
@@ -414,7 +414,7 @@ body{font-family:'Noto Sans KR',sans-serif;background:var(--bg);color:var(--text
 <!-- SETTINGS MODAL -->
 <div class="modal-overlay" id="settings-modal">
   <div class="modal settings-modal">
-    <div class="modal-title">⚙️ 콤보박스 설정</div>
+    <div class="modal-title">⚙️ 설정</div>
     <div class="stabs">
       <button class="stab active" onclick="switchStab('raids',this)">레이드 이름</button>
       <button class="stab" onclick="switchStab('diffs',this)">난이도</button>
@@ -472,8 +472,12 @@ body{font-family:'Noto Sans KR',sans-serif;background:var(--bg);color:var(--text
         <div class="s-section-title">레이드 이름 글자색</div>
         <div id="color-raid-list"></div>
       </div>
-      <div class="s-section">
-        <div class="s-section-title">난이도 글자색</div>
+      <div class="s-section" style="margin-top:16px;">
+        <div class="s-section-title">난이도 글자색 — 레이드 선택</div>
+        <select id="color-diff-raid-select" onchange="renderDiffColorForRaid(this.value)"
+          style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:8px;
+          padding:9px 12px;color:var(--text);font-size:14px;font-family:'Noto Sans KR',sans-serif;
+          outline:none;margin-bottom:12px;"></select>
         <div id="color-diff-list"></div>
       </div>
     </div>
@@ -514,18 +518,10 @@ const db    = getDatabase(fbApp);
 
 const icons = ['⚔️','🔥','💀','🌑','🌊','⚡','🐉','💎'];
 const DEFAULT = {
-  raidNames:['카제로스 종막','에기르','베히모스','카양겔','아브렐슈드','일리아칸'],
-  // raidDiffs: { '레이드이름': ['노말','하드',...] }
-  raidDiffs:{
-    '카제로스 종막':['노말','하드','헬'],
-    '에기르':['노말','하드'],
-    '베히모스':['노말','하드'],
-    '카양겔':['노말','하드'],
-    '아브렐슈드':['노말','하드','헬'],
-    '일리아칸':['노말','하드','헬'],
-  },
+  raidNames:[],
+  raidDiffs:{},
   maxDealer:4, maxSupport:2,
-  colors:{ raidNames:{}, diffs:{} }
+  colors:{ raidNames:{}, diffs:{}, raidDiffs:{} }
 };
 
 let cfg = JSON.parse(JSON.stringify(DEFAULT));
@@ -570,8 +566,8 @@ function updateUIForAuth(){
   const li = isLoggedIn();
   document.getElementById('topbar-login-btn').style.display  = li ? 'none' : 'flex';
   document.getElementById('topbar-create-btn').style.display = li ? 'flex' : 'none';
-  document.getElementById('settings-divider').style.display = li ? 'block' : 'none';
-  document.getElementById('nav-settings').style.display     = li ? 'flex'  : 'none';
+  document.getElementById('settings-divider').style.display = (li && isAdmin()) ? 'block' : 'none';
+  document.getElementById('nav-settings').style.display     = (li && isAdmin()) ? 'flex'  : 'none';
   document.getElementById('sb-bottom-guest').style.display   = li ? 'none' : 'block';
   document.getElementById('sb-bottom-user').style.display    = li ? 'block' : 'none';
   if(li){
@@ -597,7 +593,8 @@ function startListeners(){
       maxSupport:v.maxSupport??DEFAULT.maxSupport,
       colors:{
         raidNames: (v.colors&&v.colors.raidNames) ? v.colors.raidNames : {},
-        diffs:     (v.colors&&v.colors.diffs)     ? v.colors.diffs     : {}
+        diffs:     (v.colors&&v.colors.diffs)     ? v.colors.diffs     : {},
+        raidDiffs: (v.colors&&v.colors.raidDiffs) ? v.colors.raidDiffs : {}
       }
     };
     rebuildSidebar();
@@ -679,7 +676,7 @@ window.navTo = (page, subType, raidName) => {
   const icon  = currentSubFilter ? pageIcons[subType]||'🔍' : (pageIcons[page]||'📋');
   const label = currentSubFilter ? `${currentSubFilter.type==='full'?'마감':'모집 중'} · ${raidName}` : (titles[page]||page);
   document.getElementById('topbar-icon').textContent = icon;
-  document.getElementById('topbar-title').childNodes[2].textContent = ' ' + label;
+  document.getElementById('topbar-label').textContent = label;
 
   if(currentSubFilter){
     document.getElementById(`nav-${subType}`).classList.add('active');
@@ -821,7 +818,8 @@ function cardHTML(id, r){
   const statusLabel=done?'레이드완료':full?'마감':'모집 중';
 
   const raidColor = (cfg.colors?.raidNames||{})[r.name] || '';
-  const diffColor = (cfg.colors?.diffs||{})[r.diff] || '';
+  // 레이드별 난이도 색상 우선, 없으면 공통 diffs 색상
+  const diffColor = (cfg.colors?.raidDiffs?.[r.name]||{})[r.diff] || (cfg.colors?.diffs||{})[r.diff] || '';
 
   // diff badge: custom color overrides default accent
   const diffStyle = diffColor
@@ -938,7 +936,7 @@ window._edit = (id) => {
 
 // ── CREATE ──
 function getDiffsForRaid(raidName){
-  return (cfg.raidDiffs&&cfg.raidDiffs[raidName]) || ['노말','하드'];
+  return (cfg.raidDiffs&&cfg.raidDiffs[raidName]) || [];
 }
 
 function populateCreateSelects(existing){
@@ -948,17 +946,32 @@ function populateCreateSelects(existing){
   sel('f-name', cfg.raidNames, existing?.name);
   // 선택된 레이드에 맞는 난이도 로드
   const selectedRaid = existing?.name || cfg.raidNames[0];
-  sel('f-diff', getDiffsForRaid(selectedRaid), existing?.diff);
+  const diffs = getDiffsForRaid(selectedRaid);
+  const diffGroup = document.getElementById('f-diff-group');
+  if(diffs.length === 0){
+    diffGroup.style.display = 'none';
+  } else {
+    diffGroup.style.display = 'block';
+    sel('f-diff', diffs, existing?.diff);
+  }
   sel('f-dealer',[...Array(cfg.maxDealer)].map((_,i)=>`${i+1}명`),existing?`${existing.maxDealer}명`:null);
   sel('f-support',[...Array(cfg.maxSupport)].map((_,i)=>`${i+1}명`),existing?`${existing.maxSupport}명`:null);
-  document.getElementById('f-date').value=new Date().toISOString().split('T')[0];
-  document.getElementById('f-time').value=existing?.time||'23:00';
+  const now = new Date();
+  const pad = n => String(n).padStart(2,'0');
+  document.getElementById('f-date').value = now.toISOString().split('T')[0];
+  document.getElementById('f-time').value = existing?.time || `${pad(now.getHours())}:${pad(now.getMinutes())}`;
 }
 
 window.onRaidNameChange = (raidName) => {
   const diffs = getDiffsForRaid(raidName);
-  document.getElementById('f-diff').innerHTML =
-    diffs.map(v=>`<option value="${v}">${v}</option>`).join('');
+  const diffGroup = document.getElementById('f-diff-group');
+  if(diffs.length === 0){
+    diffGroup.style.display = 'none';
+  } else {
+    diffGroup.style.display = 'block';
+    document.getElementById('f-diff').innerHTML =
+      diffs.map(v=>`<option value="${v}">${v}</option>`).join('');
+  }
 };
 
 window.openCreate=()=>{
@@ -1108,46 +1121,82 @@ function renderColorPickers(){
     '#a78bfa','#ec4899','#f472b6',
     '#fbbf24','#84cc16','#06b6d4',
   ];
-  // 전체 난이도: raidDiffs 에서 유니크하게 수집
-  const allDiffs=[...new Set(Object.values(cfgDraft.raidDiffs||{}).flat())];
-  const render=(containerId, items, colorKey)=>{
-    const el=document.getElementById(containerId);
-    if(!items.length){el.innerHTML='<span style="color:var(--text3);font-size:12px;">항목 없음</span>';return;}
-    const colors=cfgDraft.colors[colorKey]||{};
-    el.innerHTML=items.map(v=>{
-      const col=colors[v]||'';
-      const swatches=PALETTE.map(c=>`
-        <div onclick="setItemColor('${colorKey}','${v.replace(/'/g,"\\'")}','${c}')"
-          style="width:18px;height:18px;border-radius:4px;background:${c};cursor:pointer;flex-shrink:0;
-          box-sizing:border-box;border:2px solid ${col===c?'#fff':'transparent'};transition:transform .1s;"
-          onmouseover="this.style.transform='scale(1.2)'" onmouseout="this.style.transform='scale(1)'"></div>
-      `).join('');
-      return `<div style="display:flex;align-items:center;justify-content:space-between;gap:10px;
-          background:var(--surface2);border:1px solid var(--border);border-radius:10px;
-          padding:10px 14px;margin-bottom:8px;">
-        <span style="font-size:13px;font-weight:600;color:${col||'var(--text)'};min-width:80px;flex-shrink:0;">${v}</span>
-        <div style="display:flex;align-items:center;gap:4px;flex-wrap:wrap;justify-content:flex-end;">
-          ${swatches}
-          ${col?`<div onclick="clearItemColor('${colorKey}','${v.replace(/'/g,"\\'")}',this)"
-            style="width:18px;height:18px;border-radius:4px;background:var(--surface);border:1px solid var(--border);
-            cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:11px;color:var(--text3);flex-shrink:0;"
-            title="초기화">✕</div>`:''}
-        </div>
-      </div>`;
-    }).join('');
+  const renderSwatches=(colorKey, v, col)=>{
+    const swatches=PALETTE.map(c=>`
+      <div onclick="setItemColor('${colorKey}','${v.replace(/'/g,"\\'")}','${c}')"
+        style="width:18px;height:18px;border-radius:4px;background:${c};cursor:pointer;flex-shrink:0;
+        box-sizing:border-box;border:2px solid ${col===c?'#fff':'transparent'};transition:transform .1s;"
+        onmouseover="this.style.transform='scale(1.2)'" onmouseout="this.style.transform='scale(1)'"></div>
+    `).join('');
+    return `<div style="display:flex;align-items:center;justify-content:space-between;gap:10px;
+        background:var(--surface2);border:1px solid var(--border);border-radius:10px;
+        padding:10px 14px;margin-bottom:8px;">
+      <span style="font-size:13px;font-weight:600;color:${col||'var(--text)'};min-width:80px;flex-shrink:0;">${v}</span>
+      <div style="display:flex;align-items:center;gap:4px;flex-wrap:wrap;justify-content:flex-end;">
+        ${swatches}
+        ${col?`<div onclick="clearItemColor('${colorKey}','${v.replace(/'/g,"\\'")}',this)"
+          style="width:18px;height:18px;border-radius:4px;background:var(--surface);border:1px solid var(--border);
+          cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:11px;color:var(--text3);flex-shrink:0;"
+          title="초기화">✕</div>`:''}
+      </div>
+    </div>`;
   };
-  render('color-raid-list', cfgDraft.raidNames, 'raidNames');
-  render('color-diff-list', allDiffs, 'diffs');
+  // 레이드 이름 색상
+  const raidEl=document.getElementById('color-raid-list');
+  if(!cfgDraft.raidNames.length){ raidEl.innerHTML='<span style="color:var(--text3);font-size:12px;">항목 없음</span>'; }
+  else {
+    const colors=cfgDraft.colors.raidNames||{};
+    raidEl.innerHTML=cfgDraft.raidNames.map(v=>renderSwatches('raidNames',v,colors[v]||'')).join('');
+  }
+  // 난이도 색상: 레이드별 select
+  const sel=document.getElementById('color-diff-raid-select');
+  if(sel){
+    sel.innerHTML=cfgDraft.raidNames.map(n=>`<option value="${n}">${n}</option>`).join('');
+    const curRaid=sel.value||cfgDraft.raidNames[0]||'';
+    renderDiffColorForRaid(curRaid);
+  }
 }
-window.setItemColor=(key,name,color)=>{
-  if(!cfgDraft.colors) cfgDraft.colors={raidNames:{},diffs:{}};
-  if(!cfgDraft.colors[key]) cfgDraft.colors[key]={};
-  cfgDraft.colors[key][name]=color;
-  renderColorPickers();
+window.renderDiffColorForRaid=(raidName)=>{
+  const PALETTE=['#ffffff','#e8eaf0','#8b93a8','#e85555','#ff8c69','#e8a838','#3ecf8e','#3ecfcf','#5b6ef5','#a78bfa','#ec4899','#f472b6','#fbbf24','#84cc16','#06b6d4'];
+  const el=document.getElementById('color-diff-list');
+  if(!el) return;
+  const diffs=(cfgDraft.raidDiffs&&cfgDraft.raidDiffs[raidName])||[];
+  if(!diffs.length){el.innerHTML='<span style="color:var(--text3);font-size:12px;">이 레이드에 설정된 난이도가 없습니다</span>';return;}
+  // 난이도 색상 키는 "레이드명::난이도" 로 레이드별 구분
+  if(!cfgDraft.colors.raidDiffs) cfgDraft.colors.raidDiffs={};
+  const colors=cfgDraft.colors.raidDiffs[raidName]||{};
+  el.innerHTML=diffs.map(v=>{
+    const col=colors[v]||'';
+    const colorKey=`raidDiffs::${raidName}`;
+    const swatches=PALETTE.map(c=>`
+      <div onclick="setDiffColor('${raidName.replace(/'/g,"\\'")}','${v.replace(/'/g,"\\'")}','${c}')"
+        style="width:18px;height:18px;border-radius:4px;background:${c};cursor:pointer;flex-shrink:0;
+        box-sizing:border-box;border:2px solid ${col===c?'#fff':'transparent'};transition:transform .1s;"
+        onmouseover="this.style.transform='scale(1.2)'" onmouseout="this.style.transform='scale(1)'"></div>
+    `).join('');
+    return `<div style="display:flex;align-items:center;justify-content:space-between;gap:10px;
+        background:var(--surface2);border:1px solid var(--border);border-radius:10px;
+        padding:10px 14px;margin-bottom:8px;">
+      <span style="font-size:13px;font-weight:600;color:${col||'var(--text)'};min-width:80px;flex-shrink:0;">${v}</span>
+      <div style="display:flex;align-items:center;gap:4px;flex-wrap:wrap;justify-content:flex-end;">
+        ${swatches}
+        ${col?`<div onclick="clearDiffColor('${raidName.replace(/'/g,"\\'")}','${v.replace(/'/g,"\\'")}',this)"
+          style="width:18px;height:18px;border-radius:4px;background:var(--surface);border:1px solid var(--border);
+          cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:11px;color:var(--text3);flex-shrink:0;"
+          title="초기화">✕</div>`:''}
+      </div>
+    </div>`;
+  }).join('');
 };
-window.clearItemColor=(key,name)=>{
-  if(cfgDraft.colors?.[key]) delete cfgDraft.colors[key][name];
-  renderColorPickers();
+window.setDiffColor=(raidName,diffName,color)=>{
+  if(!cfgDraft.colors.raidDiffs) cfgDraft.colors.raidDiffs={};
+  if(!cfgDraft.colors.raidDiffs[raidName]) cfgDraft.colors.raidDiffs[raidName]={};
+  cfgDraft.colors.raidDiffs[raidName][diffName]=color;
+  renderDiffColorForRaid(raidName);
+};
+window.clearDiffColor=(raidName,diffName)=>{
+  if(cfgDraft.colors?.raidDiffs?.[raidName]) delete cfgDraft.colors.raidDiffs[raidName][diffName];
+  renderDiffColorForRaid(raidName);
 };
 window.saveSettings=async()=>{
   if(!cfgDraft.raidNames.length){showToast('레이드 이름이 최소 1개 필요합니다','error');return;}
