@@ -329,24 +329,24 @@ body{font-family:'Noto Sans KR',sans-serif;background:var(--bg);color:var(--text
     <nav class="sb-nav">
       <div class="sb-section">모집 현황</div>
       <button class="sb-item active" id="nav-all" onclick="navTo('all')">
-        <span class="sb-icon">🗂</span> 전체
+        <span class="sb-icon">📋</span> 전체
         <span class="sb-badge" id="badge-all">0</span>
       </button>
       <button class="sb-item" id="nav-recruiting" onclick="navTo('recruiting')" >
-        <span class="sb-icon">🟢</span> 모집 중
+        <span class="sb-icon">🔍</span> 모집 중
         <span class="sb-badge" id="badge-rec">0</span>
         <span class="sb-arrow" id="arrow-rec">▾</span>
       </button>
       <div class="sb-sub open" id="sb-sub-recruiting"></div>
       <button class="sb-item full-item" id="nav-full" onclick="navTo('full')">
-        <span class="sb-icon">🔴</span> 마감
+        <span class="sb-icon">🔒</span> 마감
         <span class="sb-badge" id="badge-full">0</span>
         <span class="sb-arrow" id="arrow-full">▾</span>
       </button>
       <div class="sb-sub open" id="sb-sub-full"></div>
       <div class="sb-divider"></div>
       <button class="sb-item done-item" id="nav-done" onclick="navTo('done')">
-        <span class="sb-icon">✅</span> 레이드완료
+        <span class="sb-icon">⭐</span> 레이드완료
         <span class="sb-badge" id="badge-done">0</span>
       </button>
       <div class="sb-divider" id="settings-divider" style="display:none;"></div>
@@ -355,7 +355,7 @@ body{font-family:'Noto Sans KR',sans-serif;background:var(--bg);color:var(--text
       </button>
     </nav>
     <div id="sb-bottom-guest" class="sb-guest">
-      <div class="sb-guest-txt">로그인하면 레이드에 참여할 수 있어요</div>
+      <div class="sb-guest-txt">로그인하면 일정등록이 가능합니다</div>
       <button class="btn-sb-login" onclick="openAuthModal()">로그인 / 회원가입</button>
     </div>
     <div id="sb-bottom-user" class="sb-user" style="display:none;">
