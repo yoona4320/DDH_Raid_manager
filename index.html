@@ -357,8 +357,10 @@ body{font-family:'Noto Sans KR',sans-serif;background:var(--bg);color:var(--text
       </div>
       <div class="sb-user-nick" id="sb-nick">-</div>
       <div class="sb-user-email" id="sb-email">-</div>
-      <button class="btn-logout" style="margin-bottom:6px;" onclick="openProfileModal()">내 정보 수정</button>
-      <button class="btn-logout" onclick="doLogout()">로그아웃</button>
+      <div style="display:flex;gap:6px;margin-top:4px;">
+        <button class="btn-logout" style="flex:1;" onclick="openProfileModal()">정보 수정</button>
+        <button class="btn-logout" style="flex:1;" onclick="doLogout()">로그아웃</button>
+      </div>
     </div>
   </aside>
 
@@ -384,11 +386,27 @@ body{font-family:'Noto Sans KR',sans-serif;background:var(--bg);color:var(--text
   <div class="modal" style="max-width:440px;">
     <div class="modal-title" id="create-modal-title">⚔️ 레이드 생성</div>
     <div class="form-group"><label>레이드 이름</label><select id="f-name" onchange="onRaidNameChange(this.value)"></select></div>
+    <div class="form-group" id="f-diff-group"><label>난이도</label><select id="f-diff"></select></div>
     <div class="form-row">
       <div class="form-group"><label>날짜</label><input type="date" id="f-date"></div>
-      <div class="form-group"><label>시간</label><input type="time" id="f-time" step="600"></div>
+      <div class="form-group">
+        <label>시간</label>
+        <div style="display:flex;gap:5px;">
+          <select id="f-ampm" style="flex:1;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:8px 6px;color:var(--text);font-size:13px;font-family:'Noto Sans KR',sans-serif;outline:none;">
+            <option value="AM">오전</option>
+            <option value="PM">오후</option>
+          </select>
+          <select id="f-hour" style="flex:1;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:8px 6px;color:var(--text);font-size:13px;font-family:'Noto Sans KR',sans-serif;outline:none;">
+            <option>1</option><option>2</option><option>3</option><option>4</option><option>5</option><option>6</option>
+            <option>7</option><option>8</option><option>9</option><option>10</option><option>11</option><option>12</option>
+          </select>
+          <select id="f-min" style="flex:1;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:8px 6px;color:var(--text);font-size:13px;font-family:'Noto Sans KR',sans-serif;outline:none;">
+            <option value="00">00</option><option value="10">10</option><option value="20">20</option>
+            <option value="30">30</option><option value="40">40</option><option value="50">50</option>
+          </select>
+        </div>
+      </div>
     </div>
-    <div class="form-group" id="f-diff-group"><label>난이도</label><select id="f-diff"></select></div>
     <div class="form-row">
       <div class="form-group"><label>딜러 인원</label><select id="f-dealer"></select></div>
       <div class="form-group"><label>서포터 인원</label><select id="f-support"></select></div>
@@ -520,33 +538,29 @@ body{font-family:'Noto Sans KR',sans-serif;background:var(--bg);color:var(--text
           </div>
         </div>
 
-        <!-- 직업효과: 직업 선택 후 해당 직업의 효과 관리 -->
+        <!-- 직업효과: 독립 목록 (배경/직업명 불필요) -->
         <div class="job-stab-panel" id="job-panel-effects" style="display:none;">
-          <div style="display:flex;gap:8px;margin-bottom:12px;">
-            <div style="flex:1;">
-              <div class="s-section-title">배경</div>
-              <select id="st-eff-bg-sel" onchange="renderEffectJobSel()"
-                style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:8px 10px;color:var(--text);font-size:12px;font-family:'Noto Sans KR',sans-serif;outline:none;"></select>
-            </div>
-            <div style="flex:1;">
-              <div class="s-section-title">직업명</div>
-              <select id="st-eff-job-sel" onchange="renderEffectTagsByJob()"
-                style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:8px 10px;color:var(--text);font-size:12px;font-family:'Noto Sans KR',sans-serif;outline:none;"></select>
-            </div>
-          </div>
-          <div class="s-section-title">직업효과 목록 (최대 2개)</div>
-          <div class="tag-list" id="st-effect-tags" style="max-height:150px;overflow-y:auto;margin-bottom:8px;"></div>
+          <div class="s-section-title">직업효과 목록</div>
+          <div class="tag-list" id="st-effect-tags" style="max-height:200px;overflow-y:auto;margin-bottom:8px;"></div>
           <div class="tag-add-row">
             <input type="text" id="st-effect-input" placeholder="효과 추가 (예: 피증)" maxlength="15" onkeydown="if(event.key==='Enter')stAddEffect()">
             <button class="btn-add-tag" onclick="stAddEffect()">＋ 추가</button>
           </div>
         </div>
 
-        <!-- 직업 조합 목록 -->
+        <!-- 직업 조합: 배경/직업명/효과 선택해서 저장, 드래그 순서변경 -->
         <div class="job-stab-panel" id="job-panel-combos" style="display:none;">
-          <div class="s-section-title">저장된 직업 목록</div>
-          <div id="st-combo-tags" style="max-height:280px;overflow-y:auto;display:flex;flex-direction:column;gap:5px;"></div>
-          <div style="font-size:11px;color:var(--text3);margin-top:8px;">※ 직업은 배경/직업명 탭에서 추가하고, 효과는 직업효과 탭에서 연결하세요.</div>
+          <div class="s-section-title">직업 조합 추가</div>
+          <div style="display:flex;gap:6px;margin-bottom:4px;flex-wrap:wrap;">
+            <select id="combo-bg-sel" onchange="comboUpdateNames()" style="flex:1;min-width:80px;background:var(--surface2);border:1px solid var(--border);border-radius:7px;padding:7px 8px;color:var(--text);font-size:12px;font-family:'Noto Sans KR',sans-serif;outline:none;"></select>
+            <select id="combo-name-sel" style="flex:1;min-width:80px;background:var(--surface2);border:1px solid var(--border);border-radius:7px;padding:7px 8px;color:var(--text);font-size:12px;font-family:'Noto Sans KR',sans-serif;outline:none;"></select>
+            <select id="combo-eff1-sel" style="flex:1;min-width:70px;background:var(--surface2);border:1px solid var(--border);border-radius:7px;padding:7px 8px;color:var(--text);font-size:12px;font-family:'Noto Sans KR',sans-serif;outline:none;"></select>
+            <select id="combo-eff2-sel" style="flex:1;min-width:70px;background:var(--surface2);border:1px solid var(--border);border-radius:7px;padding:7px 8px;color:var(--text);font-size:12px;font-family:'Noto Sans KR',sans-serif;outline:none;"></select>
+            <button class="btn-add-tag" onclick="stAddCombo()" style="white-space:nowrap;">＋ 추가</button>
+          </div>
+          <div style="font-size:10px;color:var(--text3);margin-bottom:10px;">배경 / 직업명 / 효과1 / 효과2 순서 (효과는 선택사항)</div>
+          <div class="s-section-title">저장된 직업 목록 (드래그로 순서 변경)</div>
+          <div class="tag-list" id="st-combo-tags" style="max-height:220px;overflow-y:auto;"></div>
         </div>
       </div>
     </div>
@@ -627,10 +641,11 @@ const DEFAULT = {
   raidDiffs:{},
   // jobs: {
   //   bgs: ['아르데타인','실린'],
-  //   jobsByBg: { '아르데타인': ['데헌','건슬'], '실린': ['서머너'] },
-  //   effectsByJob: { '데헌': ['피증'], '서머너': ['방깎','피증'] }
+  //   jobsByBg: { '아르데타인': ['데헌','건슬'] },
+  //   effects: ['피증','방깎'],          // 독립 효과 목록
+  //   combos: [{bg,name,effects:[]}]     // 직업 조합
   // }
-  jobs:{ bgs:[], jobsByBg:{}, effectsByJob:{} },
+  jobs:{ bgs:[], jobsByBg:{}, effects:[], combos:[] },
   maxDealer:4, maxSupport:2,
   colors:{ raidNames:{}, diffs:{}, raidDiffs:{} }
 };
@@ -742,9 +757,15 @@ function startListeners(){
     if(v) cfg={
       raidNames: v.raidNames||DEFAULT.raidNames,
       raidDiffs: v.raidDiffs||DEFAULT.raidDiffs,
-      jobs: (v.jobs && v.jobs.bgs!==undefined && !Array.isArray(v.jobs) && v.jobs.jobsByBg!==undefined)
-        ? v.jobs
-        : { bgs:[], jobsByBg:{}, effectsByJob:{} },
+      jobs: (()=>{
+        const j=v.jobs||{};
+        return {
+          bgs: Array.isArray(j.bgs)?j.bgs:[],
+          jobsByBg: j.jobsByBg&&typeof j.jobsByBg==='object'?j.jobsByBg:{},
+          effects: Array.isArray(j.effects)?j.effects:[],
+          combos: Array.isArray(j.combos)?j.combos:[]
+        };
+      })(),
       maxDealer: v.maxDealer??DEFAULT.maxDealer,
       maxSupport:v.maxSupport??DEFAULT.maxSupport,
       colors:{
@@ -1155,35 +1176,25 @@ window._openJobModal = (id, role) => {
   const myNick=currentUser.displayName;
   if(dl.includes(myNick)||sp.includes(myNick)){ showToast('이미 참여 중입니다','error'); return; }
   _jobPending={id,role};
-  // 직업이 하나라도 있는지 확인
-  const bgs=cfg.jobs?.bgs||[];
-  const hasJobs=bgs.some(bg=>(cfg.jobs?.jobsByBg?.[bg]||[]).length>0);
+  const combos=cfg.jobs?.combos||[];
+  const hasCombos=combos.length>0;
   document.getElementById('job-modal-title').textContent=role==='dealer'?'⚔️ 딜러 직업 선택':'🛡 서폿 직업 선택';
-  document.getElementById('job-no-list').style.display=hasJobs?'none':'block';
-  document.getElementById('job-form').style.display=hasJobs?'block':'none';
-  document.getElementById('job-confirm-btn').disabled=!hasJobs;
-  if(hasJobs){
-    // jm-job: bg/직업명 형태로 모든 직업 나열
+  document.getElementById('job-no-list').style.display=hasCombos?'none':'block';
+  document.getElementById('job-form').style.display=hasCombos?'block':'none';
+  document.getElementById('job-confirm-btn').disabled=!hasCombos;
+  if(hasCombos){
     const sel=document.getElementById('jm-job');
-    const opts=[];
-    bgs.forEach(bg=>{
-      const jobs=cfg.jobs?.jobsByBg?.[bg]||[];
-      jobs.forEach(j=>opts.push({bg,job:j,label:`${j}`}));
-    });
-    sel.innerHTML=opts.map((o,i)=>`<option value="${i}">${o.label}</option>`).join('');
+    sel.innerHTML=combos.map((c,i)=>`<option value="${i}">${c.name}${c.effects?.length?` (${c.effects.join(',')})`:''}</option>`).join('');
     jmUpdateEffects();
   }
   document.getElementById('job-modal').classList.add('open');
 };
 window.jmUpdateJobs=()=>{ jmUpdateEffects(); };
 window.jmUpdateEffects=()=>{
-  // idx 기반으로 직업 찾기
-  const bgs=cfg.jobs?.bgs||[];
-  const opts=[];
-  bgs.forEach(bg=>{ (cfg.jobs?.jobsByBg?.[bg]||[]).forEach(j=>opts.push({bg,job:j})); });
+  const combos=cfg.jobs?.combos||[];
   const idx=parseInt(document.getElementById('jm-job')?.value||'0');
-  const sel=opts[idx];
-  const effects=sel?(cfg.jobs?.effectsByJob?.[sel.job]||[]):[];
+  const combo=combos[idx];
+  const effects=combo?.effects||[];
   const cont=document.getElementById('jm-effects');
   const grp=document.getElementById('jm-effect-group');
   grp.style.display=effects.length?'block':'none';
@@ -1194,14 +1205,12 @@ document.getElementById('job-modal').addEventListener('click',e=>{ if(e.target==
 window.confirmJob=async()=>{
   if(!_jobPending) return;
   const {id,role}=_jobPending;
-  const bgs2=cfg.jobs?.bgs||[];
-  const opts2=[];
-  bgs2.forEach(bg2=>{ (cfg.jobs?.jobsByBg?.[bg2]||[]).forEach(j=>opts2.push({bg:bg2,job:j})); });
+  const combos2=cfg.jobs?.combos||[];
   const idx2=parseInt(document.getElementById('jm-job')?.value||'0');
-  const sel2=opts2[idx2];
-  const bg=sel2?.bg||'';
-  const job=sel2?.job||'';
-  const effects=job?(cfg.jobs?.effectsByJob?.[job]||[]):[];
+  const combo2=combos2[idx2];
+  const bg=combo2?.bg||'';
+  const job=combo2?.name||'';
+  const effects=combo2?.effects||[];
   const myNick=currentUser.displayName;
   const r=raidsData[id]; if(!r) return;
   const dl=getD(r), sp=getS(r);
@@ -1270,12 +1279,33 @@ function getDiffsForRaid(raidName){
   return (cfg.raidDiffs&&cfg.raidDiffs[raidName]) || [];
 }
 
+function setTimePickers(timeStr){
+  // timeStr: "HH:MM" 24h
+  const [hh,mm] = (timeStr||'').split(':').map(Number);
+  const h = isNaN(hh)?new Date().getHours():hh;
+  const m = isNaN(mm)?0:mm;
+  const ampm = h < 12 ? 'AM' : 'PM';
+  const hour12 = h === 0 ? 12 : h > 12 ? h - 12 : h;
+  const minRounded = Math.round(m/10)*10; // 10분 단위로 반올림
+  document.getElementById('f-ampm').value = ampm;
+  document.getElementById('f-hour').value = String(hour12);
+  document.getElementById('f-min').value = String(minRounded).padStart(2,'0');
+}
+function getTimeFromPickers(){
+  const ampm = document.getElementById('f-ampm').value;
+  const h12 = parseInt(document.getElementById('f-hour').value);
+  const min = document.getElementById('f-min').value;
+  let h24 = h12;
+  if(ampm==='AM' && h12===12) h24=0;
+  else if(ampm==='PM' && h12!==12) h24=h12+12;
+  return `${String(h24).padStart(2,'0')}:${min}`;
+}
+
 function populateCreateSelects(existing){
   const sel=(id,items,cur)=>{
     document.getElementById(id).innerHTML=items.map(v=>`<option value="${v}"${v===cur?' selected':''}>${v}</option>`).join('');
   };
   sel('f-name', cfg.raidNames, existing?.name);
-  // 선택된 레이드에 맞는 난이도 로드
   const selectedRaid = existing?.name || cfg.raidNames[0];
   const diffs = getDiffsForRaid(selectedRaid);
   const diffGroup = document.getElementById('f-diff-group');
@@ -1288,9 +1318,8 @@ function populateCreateSelects(existing){
   sel('f-dealer',[...Array(cfg.maxDealer)].map((_,i)=>`${i+1}명`),existing?`${existing.maxDealer}명`:null);
   sel('f-support',[...Array(cfg.maxSupport)].map((_,i)=>`${i+1}명`),existing?`${existing.maxSupport}명`:null);
   const now = new Date();
-  const pad = n => String(n).padStart(2,'0');
   document.getElementById('f-date').value = now.toISOString().split('T')[0];
-  document.getElementById('f-time').value = existing?.time || `${pad(now.getHours())}:${pad(now.getMinutes())}`;
+  setTimePickers(existing?.time || null);
 }
 
 window.onRaidNameChange = (raidName) => {
@@ -1319,7 +1348,7 @@ document.getElementById('create-modal').addEventListener('click',e=>{ if(e.targe
 window.submitRaid=async()=>{
   const name=document.getElementById('f-name').value;
   const date=document.getElementById('f-date').value;
-  const time=document.getElementById('f-time').value;
+  const time=getTimeFromPickers();
   const diff=document.getElementById('f-diff').value;
   const maxDealer=parseInt(document.getElementById('f-dealer').value);
   const maxSupport=parseInt(document.getElementById('f-support').value);
@@ -1345,9 +1374,11 @@ window.openSettings=()=>{
   cfgDraft=JSON.parse(JSON.stringify(cfg));
   if(!cfgDraft.colors) cfgDraft.colors={raidNames:{},diffs:{},raidDiffs:{}};
   if(!cfgDraft.raidDiffs) cfgDraft.raidDiffs={};
-  if(!cfgDraft.jobs||Array.isArray(cfgDraft.jobs)||cfgDraft.jobs.jobsByBg===undefined){
-    cfgDraft.jobs={ bgs:[], jobsByBg:{}, effectsByJob:{} };
-  }
+  if(!cfgDraft.jobs||Array.isArray(cfgDraft.jobs)) cfgDraft.jobs={};
+  if(!Array.isArray(cfgDraft.jobs.bgs)) cfgDraft.jobs.bgs=[];
+  if(!cfgDraft.jobs.jobsByBg||typeof cfgDraft.jobs.jobsByBg!=='object') cfgDraft.jobs.jobsByBg={};
+  if(!Array.isArray(cfgDraft.jobs.effects)) cfgDraft.jobs.effects=[];
+  if(!Array.isArray(cfgDraft.jobs.combos)) cfgDraft.jobs.combos=[];
   document.getElementById('dealer-val').textContent=cfgDraft.maxDealer;
   document.getElementById('support-val').textContent=cfgDraft.maxSupport;
   renderStTags();
@@ -1369,18 +1400,14 @@ function renderStTags(){
 function renderJobTags(){ /* legacy - no-op */ }
 window.stDelJob=()=>{}; window.stAddJob=()=>{}; window.stEditJob=()=>{};
 
-// ── 직업 설정 JS (배경>직업>효과, 딜/폿 구분 없음) ──
-function getJobBg(){  return document.getElementById('job-bg-select')?.value||''; }
-function getJobJob(){ return document.getElementById('job-job-select')?.value||''; }
-
-// ── 직업 설정 JS (배경>직업명 연결, 직업명>효과 연결) ──
+// ── 직업 설정 JS ──
 function getJ(k){ return cfgDraft.jobs?.[k]; }
 
 function renderAllJobTabs(){
   renderJobBgTags();
   populateJobNameBgSel(); renderJobNamesByBg();
-  populateEffBgSel(); renderEffectJobSel(); renderEffectTagsByJob();
-  renderComboTags();
+  renderEffectTagsIndep();
+  populateComboSelects(); renderComboTags();
 }
 window.renderJobBgList=()=>renderAllJobTabs();
 window.renderJobList=()=>renderAllJobTabs();
@@ -1390,45 +1417,59 @@ window.switchJobStab=(tab,el)=>{
   document.querySelectorAll('.job-stab').forEach(b=>{ b.style.background='transparent'; b.style.color='var(--text2)'; });
   el.style.background='var(--accent)'; el.style.color='#fff';
   document.querySelectorAll('.job-stab-panel').forEach(p=>p.style.display='none');
-  const panelId='job-panel-'+tab;
-  const panel=document.getElementById(panelId);
+  const panel=document.getElementById('job-panel-'+tab);
   if(panel) panel.style.display='block';
   if(tab==='names') populateJobNameBgSel();
-  if(tab==='effects'){ populateEffBgSel(); renderEffectJobSel(); renderEffectTagsByJob(); }
-  if(tab==='combos') renderComboTags();
+  if(tab==='effects') renderEffectTagsIndep();
+  if(tab==='combos'){ populateComboSelects(); renderComboTags(); }
 };
 
-function editableTagItem(val, blurFn, delFn){
-  return `<div class="tag-item">
-    <input class="tag-edit-input" value="${val.replace(/"/g,'&quot;')}"
-      onblur="${blurFn}" onkeydown="if(event.key==='Enter')this.blur()"
-      style="flex:1;background:transparent;border:none;color:var(--text);font-size:13px;font-family:'Noto Sans KR',sans-serif;outline:none;min-width:0;">
-    <button class="tag-del" onclick="${delFn}">✕</button>
+// **6번용 수정 가능 태그 아이템 (✏️ 아이콘)**
+function editTagItem(val, editFnName, editArgs, delFn){
+  // editFnName: 함수명 문자열, editArgs: 추가 인자 (인덱스 등, val은 자동으로 붙음)
+  const safe=val.replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;');
+  return `<div class="tag-item" style="display:flex;align-items:center;gap:4px;">
+    <span class="tag-label-text" style="flex:1;font-size:13px;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${safe}">${val}</span>
+    <button style="padding:2px 6px;font-size:11px;background:rgba(91,110,245,.15);color:var(--accent);border:1px solid rgba(91,110,245,.3);border-radius:4px;cursor:pointer;flex-shrink:0;" data-edit="${editFnName}" data-args='${JSON.stringify(editArgs)}' data-cur="${safe}" onclick="startEditTagBtn(this)">✏️</button>
+    <button class="tag-del" style="flex-shrink:0;" onclick="${delFn}">✕</button>
   </div>`;
 }
+window.startEditTagBtn=(btn)=>{
+  const fnName=btn.dataset.edit;
+  const args=JSON.parse(btn.dataset.args||'[]');
+  const cur=btn.dataset.cur;
+  const span=btn.previousElementSibling;
+  const inp=document.createElement('input');
+  inp.value=span.textContent; inp.className='tag-edit-input';
+  inp.style.cssText='flex:1;background:transparent;border:none;color:var(--text);font-size:13px;font-family:\'Noto Sans KR\',sans-serif;outline:none;min-width:0;';
+  inp.onblur=()=>{ window[fnName](...args,inp.value); };
+  inp.onkeydown=(e)=>{ if(e.key==='Enter'||e.key==='Escape') inp.blur(); };
+  span.replaceWith(inp); inp.focus(); inp.select();
+};
 
 // ── 직업배경 ──
 function renderJobBgTags(){
   const el=document.getElementById('st-bg-tags'); if(!el) return;
-  const bgs=(getJ('bgs')||[]);
-  el.innerHTML=bgs.length?bgs.map((v,i)=>editableTagItem(v,`stEditBgItem(${i},this.value)`,`stDelBgItem(${i})`)).join('')
+  const bgs=cfgDraft.jobs.bgs||[];
+  el.innerHTML=bgs.length?bgs.map((v,i)=>editTagItem(v,'stEditBgItem',[i],`stDelBgItem(${i})`)).join('')
     :'<span style="color:var(--text3);font-size:12px;">배경 없음</span>';
   el.scrollTop=el.scrollHeight;
+  initDrag(el,'__bgs__');
 }
 window.stAddBg=()=>{
   const inp=document.getElementById('st-bg-input'),v=inp.value.trim(); if(!v) return;
   if(!cfgDraft.jobs.bgs) cfgDraft.jobs.bgs=[];
   if(cfgDraft.jobs.bgs.includes(v)){showToast('이미 있는 배경입니다','error');return;}
-  cfgDraft.jobs.bgs.push(v); inp.value=''; renderAllJobTabs();
+  cfgDraft.jobs.bgs.push(v); inp.value=''; renderJobBgTags(); populateJobNameBgSel(); populateComboSelects();
 };
 window.stEditBgItem=(i,val)=>{
   val=val.trim(); if(!val) return;
   const old=cfgDraft.jobs.bgs[i];
   cfgDraft.jobs.bgs[i]=val;
-  // jobsByBg 키 이름도 변경
-  if(old!==val && cfgDraft.jobs.jobsByBg?.[old]!==undefined){
+  if(old!==val&&cfgDraft.jobs.jobsByBg?.[old]!==undefined){
     cfgDraft.jobs.jobsByBg[val]=cfgDraft.jobs.jobsByBg[old];
     delete cfgDraft.jobs.jobsByBg[old];
+    cfgDraft.jobs.combos=(cfgDraft.jobs.combos||[]).map(c=>c.bg===old?{...c,bg:val}:c);
   }
   renderAllJobTabs();
 };
@@ -1436,10 +1477,11 @@ window.stDelBgItem=(i)=>{
   const bg=cfgDraft.jobs.bgs[i];
   cfgDraft.jobs.bgs.splice(i,1);
   if(cfgDraft.jobs.jobsByBg?.[bg]) delete cfgDraft.jobs.jobsByBg[bg];
+  cfgDraft.jobs.combos=(cfgDraft.jobs.combos||[]).filter(c=>c.bg!==bg);
   renderAllJobTabs();
 };
 
-// ── 직업명 (배경 선택 후) ──
+// ── 직업명 (배경 선택) ──
 function populateJobNameBgSel(){
   const sel=document.getElementById('st-jobname-bg-sel'); if(!sel) return;
   const bgs=cfgDraft.jobs.bgs||[];
@@ -1450,7 +1492,7 @@ window.renderJobNamesByBg=()=>{
   const bg=document.getElementById('st-jobname-bg-sel')?.value||'';
   if(!bg){ el.innerHTML='<span style="color:var(--text3);font-size:12px;">배경을 먼저 선택하세요</span>'; return; }
   const jobs=(cfgDraft.jobs.jobsByBg?.[bg])||[];
-  el.innerHTML=jobs.length?jobs.map((v,i)=>editableTagItem(v,`stEditJobNameItem('${bg.replace(/'/g,"\\'")}',${i},this.value)`,`stDelJobNameItem('${bg.replace(/'/g,"\\'")}',${i})`)).join('')
+  el.innerHTML=jobs.length?jobs.map((v,i)=>editTagItem(v,'stEditJobNameItem',[bg,i],`stDelJobNameItem('${bg.replace(/'/g,"\\'")}',${i})`)).join('')
     :'<span style="color:var(--text3);font-size:12px;">직업명 없음</span>';
   el.scrollTop=el.scrollHeight;
 };
@@ -1461,110 +1503,128 @@ window.stAddJobName=()=>{
   if(!cfgDraft.jobs.jobsByBg) cfgDraft.jobs.jobsByBg={};
   if(!cfgDraft.jobs.jobsByBg[bg]) cfgDraft.jobs.jobsByBg[bg]=[];
   if(cfgDraft.jobs.jobsByBg[bg].includes(v)){showToast('이미 있는 직업명입니다','error');return;}
-  cfgDraft.jobs.jobsByBg[bg].push(v); inp.value=''; renderJobNamesByBg();
+  cfgDraft.jobs.jobsByBg[bg].push(v); inp.value=''; renderJobNamesByBg(); populateComboSelects();
 };
 window.stEditJobNameItem=(bg,i,val)=>{
   val=val.trim(); if(!val) return;
   const old=cfgDraft.jobs.jobsByBg[bg][i];
   cfgDraft.jobs.jobsByBg[bg][i]=val;
-  // effectsByJob 키 이름도 변경
-  if(old!==val && cfgDraft.jobs.effectsByJob?.[old]!==undefined){
-    cfgDraft.jobs.effectsByJob[val]=cfgDraft.jobs.effectsByJob[old];
-    delete cfgDraft.jobs.effectsByJob[old];
-  }
-  renderJobNamesByBg();
+  if(old!==val) cfgDraft.jobs.combos=(cfgDraft.jobs.combos||[]).map(c=>c.bg===bg&&c.name===old?{...c,name:val}:c);
+  renderJobNamesByBg(); populateComboSelects();
 };
 window.stDelJobNameItem=(bg,i)=>{
   const job=cfgDraft.jobs.jobsByBg[bg][i];
   cfgDraft.jobs.jobsByBg[bg].splice(i,1);
-  if(cfgDraft.jobs.effectsByJob?.[job]) delete cfgDraft.jobs.effectsByJob[job];
-  renderJobNamesByBg();
+  cfgDraft.jobs.combos=(cfgDraft.jobs.combos||[]).filter(c=>!(c.bg===bg&&c.name===job));
+  renderJobNamesByBg(); populateComboSelects();
 };
 
-// ── 직업효과 (배경+직업 선택 후, 최대 2개) ──
-function populateEffBgSel(){
-  const sel=document.getElementById('st-eff-bg-sel'); if(!sel) return;
-  const bgs=cfgDraft.jobs.bgs||[];
-  sel.innerHTML=bgs.length?bgs.map(b=>`<option value="${b}">${b}</option>`).join(''):'<option value="">배경 없음</option>';
-}
-window.renderEffectJobSel=()=>{
-  const bg=document.getElementById('st-eff-bg-sel')?.value||'';
-  const sel=document.getElementById('st-eff-job-sel'); if(!sel) return;
-  const jobs=(cfgDraft.jobs.jobsByBg?.[bg])||[];
-  sel.innerHTML=jobs.length?jobs.map(j=>`<option value="${j}">${j}</option>`).join(''):'<option value="">직업 없음</option>';
-  renderEffectTagsByJob();
-};
-window.renderEffectTagsByJob=()=>{
+// ── 직업효과 (독립 목록) ──
+function renderEffectTagsIndep(){
   const el=document.getElementById('st-effect-tags'); if(!el) return;
-  const job=document.getElementById('st-eff-job-sel')?.value||'';
-  if(!job){ el.innerHTML='<span style="color:var(--text3);font-size:12px;">직업을 먼저 선택하세요</span>'; return; }
-  const effects=(cfgDraft.jobs.effectsByJob?.[job])||[];
-  el.innerHTML=effects.length?effects.map((v,i)=>editableTagItem(v,`stEditEffectItem('${job.replace(/'/g,"\\'")}',${i},this.value)`,`stDelEffectItem('${job.replace(/'/g,"\\'")}',${i})`)).join('')
+  const effs=cfgDraft.jobs.effects||[];
+  el.innerHTML=effs.length?effs.map((v,i)=>editTagItem(v,'stEditEffectItem',[i],`stDelEffectItem(${i})`)).join('')
     :'<span style="color:var(--text3);font-size:12px;">효과 없음</span>';
   el.scrollTop=el.scrollHeight;
-};
+}
 window.stAddEffect=()=>{
-  const job=document.getElementById('st-eff-job-sel')?.value||'';
-  if(!job){showToast('직업을 먼저 선택하세요','error');return;}
   const inp=document.getElementById('st-effect-input'),v=inp.value.trim(); if(!v) return;
-  if(!cfgDraft.jobs.effectsByJob) cfgDraft.jobs.effectsByJob={};
-  if(!cfgDraft.jobs.effectsByJob[job]) cfgDraft.jobs.effectsByJob[job]=[];
-  if(cfgDraft.jobs.effectsByJob[job].length>=2){showToast('효과는 최대 2개까지 가능합니다','error');return;}
-  if(cfgDraft.jobs.effectsByJob[job].includes(v)){showToast('이미 있는 효과입니다','error');return;}
-  cfgDraft.jobs.effectsByJob[job].push(v); inp.value=''; renderEffectTagsByJob();
+  if(!cfgDraft.jobs.effects) cfgDraft.jobs.effects=[];
+  if(cfgDraft.jobs.effects.includes(v)){showToast('이미 있는 효과입니다','error');return;}
+  cfgDraft.jobs.effects.push(v); inp.value=''; renderEffectTagsIndep(); populateComboSelects();
 };
-window.stEditEffectItem=(job,i,val)=>{
+window.stEditEffectItem=(i,val)=>{
   val=val.trim(); if(!val) return;
-  if(cfgDraft.jobs.effectsByJob?.[job]) cfgDraft.jobs.effectsByJob[job][i]=val;
-  renderEffectTagsByJob();
+  const old=cfgDraft.jobs.effects[i]; cfgDraft.jobs.effects[i]=val;
+  if(old!==val) cfgDraft.jobs.combos=(cfgDraft.jobs.combos||[]).map(c=>({...c,effects:(c.effects||[]).map(e=>e===old?val:e)}));
+  renderEffectTagsIndep(); renderComboTags();
 };
-window.stDelEffectItem=(job,i)=>{
-  if(cfgDraft.jobs.effectsByJob?.[job]) cfgDraft.jobs.effectsByJob[job].splice(i,1);
-  renderEffectTagsByJob();
+window.stDelEffectItem=(i)=>{
+  const eff=cfgDraft.jobs.effects[i]; cfgDraft.jobs.effects.splice(i,1);
+  cfgDraft.jobs.combos=(cfgDraft.jobs.combos||[]).map(c=>({...c,effects:(c.effects||[]).filter(e=>e!==eff)}));
+  renderEffectTagsIndep(); renderComboTags();
 };
 
-// ── 직업 조합 목록 (자동 생성: bg > jobsByBg > effectsByJob) ──
+// ── 직업 조합 (배경/직업명/효과1/효과2 선택, 드래그 순서) ──
+function populateComboSelects(){
+  const bgs=cfgDraft.jobs.bgs||[];
+  const effs=cfgDraft.jobs.effects||[];
+  const bgSel=document.getElementById('combo-bg-sel');
+  if(bgSel) bgSel.innerHTML=bgs.length?bgs.map(b=>`<option>${b}</option>`).join(''):'<option>배경 없음</option>';
+  comboUpdateNames();
+  const e1=document.getElementById('combo-eff1-sel');
+  const e2=document.getElementById('combo-eff2-sel');
+  const effOpts=['(없음)',...effs].map(e=>`<option>${e}</option>`).join('');
+  if(e1) e1.innerHTML=effOpts;
+  if(e2) e2.innerHTML=effOpts;
+}
+window.comboUpdateNames=()=>{
+  const bg=document.getElementById('combo-bg-sel')?.value||'';
+  const jobs=(cfgDraft.jobs.jobsByBg?.[bg])||[];
+  const sel=document.getElementById('combo-name-sel');
+  if(sel) sel.innerHTML=jobs.length?jobs.map(j=>`<option>${j}</option>`).join(''):'<option>직업 없음</option>';
+};
+window.stAddCombo=()=>{
+  const bg=document.getElementById('combo-bg-sel')?.value||'';
+  const name=document.getElementById('combo-name-sel')?.value||'';
+  const e1=document.getElementById('combo-eff1-sel')?.value||'';
+  const e2=document.getElementById('combo-eff2-sel')?.value||'';
+  if(!bg||bg==='배경 없음'||!name||name==='직업 없음'){showToast('배경과 직업명을 선택하세요','error');return;}
+  const effects=[e1,e2].filter(e=>e&&e!=='(없음)');
+  if(!cfgDraft.jobs.combos) cfgDraft.jobs.combos=[];
+  cfgDraft.jobs.combos.push({bg,name,effects});
+  renderComboTags();
+};
+window.stDelCombo=(i)=>{ cfgDraft.jobs.combos.splice(i,1); renderComboTags(); };
 function renderComboTags(){
   const el=document.getElementById('st-combo-tags'); if(!el) return;
-  const bgs=cfgDraft.jobs.bgs||[];
-  const rows=[];
-  bgs.forEach(bg=>{
-    const jobs=(cfgDraft.jobs.jobsByBg?.[bg])||[];
-    jobs.forEach(job=>{
-      const effects=(cfgDraft.jobs.effectsByJob?.[job])||[];
-      rows.push({bg,job,effects});
-    });
-  });
-  if(!rows.length){ el.innerHTML='<span style="color:var(--text3);font-size:12px;">직업 없음 — 배경/직업명 탭에서 추가하세요</span>'; return; }
-  el.innerHTML=rows.map(r=>{
-    const effStr=r.effects.length?`(${r.effects.join(',')})` :'';
-    return `<div style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:8px 12px;font-size:12px;color:var(--text);">
-      ${r.bg} / <b>${r.job}</b>${effStr?` <span style="color:var(--text2);">${effStr}</span>`:''}
+  const combos=cfgDraft.jobs.combos||[];
+  if(!combos.length){ el.innerHTML='<span style="color:var(--text3);font-size:12px;">직업 없음</span>'; return; }
+  el.innerHTML=combos.map((c,i)=>{
+    const effStr=c.effects?.length?`(${c.effects.join(',')})` :'';
+    return `<div class="tag-item" draggable="true" data-index="${i}" data-key="__combos__" style="display:flex;align-items:center;gap:6px;">
+      <span class="tag-drag">⠿</span>
+      <span style="flex:1;font-size:12px;color:var(--text);">${c.bg} / <b>${c.name}</b>${effStr?` <span style="color:var(--text2);">${effStr}</span>`:''}</span>
+      <button class="tag-del" onclick="stDelCombo(${i})">✕</button>
     </div>`;
   }).join('');
   el.scrollTop=el.scrollHeight;
+  // 드래그로 순서 변경
+  initDrag(el,'__combos__');
 }
 
 // legacy stubs
 window.stAddJobItem=()=>{}; window.stDelJobItem=()=>{}; window.stEditJobItem=()=>{};
-window.stAddCombo=()=>{}; window.stDelCombo=()=>{}; window.stEditCombo=()=>{};
+window.stEditCombo=()=>{};
 window.stDelBg=()=>{}; window.stEditBg=()=>{};
 window.stDelListItem=()=>{}; window.stEditListItem=()=>{};
 window.stDelEffect=()=>{}; window.stEditEffect=()=>{};
+window.renderEffectJobSel=()=>{}; window.renderEffectTagsByJob=()=>{};
+window.populateEffBgSel=()=>{}; window.populateComboBgSel=()=>{};
 
 function renderDraggableList(containerId,items,key){
   const el=document.getElementById(containerId);
   if(!items||!items.length){ el.innerHTML='<span style="color:var(--text3);font-size:12px;">항목 없음 — 아래에서 추가하세요</span>'; return; }
   el.innerHTML=items.map((v,i)=>`
-    <div class="tag-item" draggable="true" data-index="${i}" data-key="${key}">
+    <div class="tag-item" draggable="true" data-index="${i}" data-key="${key}" style="display:flex;align-items:center;gap:4px;">
       <span class="tag-drag">⠿</span>
-      <input class="tag-edit-input" value="${v}" onblur="stEditItem('${key}',${i},this.value)" onkeydown="if(event.key==='Enter')this.blur()" style="flex:1;background:transparent;border:none;color:var(--text);font-size:13px;font-family:'Noto Sans KR',sans-serif;outline:none;min-width:0;">
-      <button class="tag-del" onclick="stDelItem('${key}',${i})">✕</button>
+      <span class="tag-label-text" style="flex:1;font-size:13px;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${v}</span>
+      <button style="padding:2px 6px;font-size:11px;background:rgba(91,110,245,.15);color:var(--accent);border:1px solid rgba(91,110,245,.3);border-radius:4px;cursor:pointer;flex-shrink:0;" onclick="startInlineEdit(this,'${key}',${i})">✏️</button>
+      <button class="tag-del" onclick="stDelItem('${key}',${i})" style="flex-shrink:0;">✕</button>
     </div>`).join('');
-  // 스크롤 맨 아래로 (새로 추가된 항목 보이게)
   el.scrollTop = el.scrollHeight;
   initDrag(el,key);
 }
+window.startInlineEdit=(btn,key,i)=>{
+  const span=btn.previousElementSibling;
+  const cur=span.textContent;
+  const inp=document.createElement('input');
+  inp.value=cur; inp.className='tag-edit-input';
+  inp.style.cssText='flex:1;background:transparent;border:none;color:var(--text);font-size:13px;font-family:\'Noto Sans KR\',sans-serif;outline:none;min-width:0;';
+  inp.onblur=()=>{ stEditItem(key,i,inp.value); };
+  inp.onkeydown=(e)=>{ if(e.key==='Enter'||e.key==='Escape') inp.blur(); };
+  span.replaceWith(inp); inp.focus(); inp.select();
+};
 window.stEditItem=(key,i,val)=>{
   const v=val.trim(); if(!v) return;
   if(key==='__diffs__'){
@@ -1594,9 +1654,13 @@ function initDrag(container,key){
         const fi=parseInt(dragSrc.dataset.index),ti=parseInt(item.dataset.index);
         let arr;
         if(key==='__diffs__') arr=cfgDraft.raidDiffs[_selectedDiffRaid];
+        else if(key==='__bgs__') arr=cfgDraft.jobs.bgs;
+        else if(key==='__combos__') arr=cfgDraft.jobs.combos;
         else arr=cfgDraft[key];
-        const [m]=arr.splice(fi,1); arr.splice(ti,0,m);
+        if(arr){ const [m]=arr.splice(fi,1); arr.splice(ti,0,m); }
         if(key==='__diffs__') renderDiffTagsForSelected();
+        else if(key==='__bgs__') renderJobBgTags();
+        else if(key==='__combos__') renderComboTags();
         else renderStTags();
       }
     });
