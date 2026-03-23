@@ -533,13 +533,29 @@ body{font-family:'Noto Sans KR',sans-serif;background:var(--bg);color:var(--text
 <div class="modal-overlay" id="settings-modal">
   <div class="modal settings-modal">
     <div class="modal-title">⚙️ 설정</div>
-    <div class="stabs">
-      <button class="stab active" onclick="switchStab('raids',this)">레이드 이름</button>
-      <button class="stab" onclick="switchStab('diffs',this)">난이도</button>
-      <button class="stab" onclick="switchStab('games',this)">종합게임</button>
-      <button class="stab" onclick="switchStab('counts',this)">인원 수</button>
-      <button class="stab" onclick="switchStab('colors',this)">글자색</button>
-      <button class="stab" onclick="switchStab('jobs',this);renderAllJobTabs();">직업수정</button>
+    <!-- 설정 카테고리 선택 -->
+    <div style="display:flex;gap:4px;margin-bottom:12px;background:var(--surface);border-radius:9px;padding:3px;">
+      <button id="st-cat-raid" onclick="switchSettingsCat('raid',this)"
+        style="flex:1;padding:6px;border:none;border-radius:7px;font-size:12px;font-weight:700;cursor:pointer;font-family:'Noto Sans KR',sans-serif;background:var(--accent);color:#fff;transition:all .15s;">⚔️ 레이드</button>
+      <button id="st-cat-game" onclick="switchSettingsCat('game',this)"
+        style="flex:1;padding:6px;border:none;border-radius:7px;font-size:12px;font-weight:700;cursor:pointer;font-family:'Noto Sans KR',sans-serif;background:transparent;color:var(--text2);transition:all .15s;">🎮 종합게임</button>
+    </div>
+    <!-- 레이드 설정 탭 -->
+    <div id="st-section-raid">
+      <div class="stabs">
+        <button class="stab active" onclick="switchStab('raids',this)">레이드 이름</button>
+        <button class="stab" onclick="switchStab('diffs',this)">난이도</button>
+        <button class="stab" onclick="switchStab('counts',this)">인원 수</button>
+        <button class="stab" onclick="switchStab('colors',this)">글자색</button>
+        <button class="stab" onclick="switchStab('jobs',this);renderAllJobTabs();">직업수정</button>
+      </div>
+    </div>
+    <!-- 종합게임 설정 탭 -->
+    <div id="st-section-game" style="display:none;">
+      <div class="stabs">
+        <button class="stab active" onclick="switchStab('games',this)">게임 이름</button>
+        <button class="stab" onclick="switchStab('game-counts',this)">인원 수</button>
+      </div>
     </div>
     <div class="stab-panel active" id="stab-raids">
       <div class="s-section">
@@ -579,6 +595,20 @@ body{font-family:'Noto Sans KR',sans-serif;background:var(--bg);color:var(--text
           <input type="text" id="st-game-input" placeholder="게임 이름 추가 (예: 마피아)" maxlength="30" onkeydown="if(event.key==='Enter')stAddGame()">
           <button class="btn-add-tag" id="st-game-btn" onclick="stAddGame()">＋ 추가</button>
         </div>
+      </div>
+    </div>
+    <div class="stab-panel" id="stab-game-counts">
+      <div class="s-section">
+        <div class="s-section-title">종합게임 기본 인원</div>
+        <div class="count-setting-row">
+          <span class="count-setting-label">최대 인원</span>
+          <div class="count-stepper">
+            <button class="step-btn" onclick="stepCount('gameMax',-1)">−</button>
+            <span class="step-val" id="game-max-val">8</span>
+            <button class="step-btn" onclick="stepCount('gameMax',1)">＋</button>
+          </div>
+        </div>
+        <div style="font-size:12px;color:var(--text3);margin-top:4px;">※ 게임 생성 시 기본값으로 사용됩니다.</div>
       </div>
     </div>
     <div class="stab-panel" id="stab-jobs">
@@ -725,7 +755,7 @@ const DEFAULT = {
   raidDiffs:{},
   gameNames:[],
   jobs:{ bgs:[], jobsByBg:{}, effects:[], combos:[] },
-  maxDealer:4, maxSupport:2,
+  maxDealer:4, maxSupport:2, gameMaxMembers:8,
   colors:{ raidNames:{}, diffs:{}, raidDiffs:{} }
 };
 
@@ -814,6 +844,17 @@ const storage = {
   remove(k){ try{ localStorage.removeItem(k); }catch(e){} }
 };
 
+// ── NEW 뱃지 헬퍼 ──
+// key: 'raid:레이드이름' | 'game:게임이름'  value: 마지막 확인 timestamp
+function getLastSeen(key){ return parseInt(storage.get('seen:'+key)||'0'); }
+function markSeen(key){ storage.set('seen:'+key, Date.now()); }
+function hasNew(entries, key){
+  // entries: [{createdAt},...] — 마지막 확인 이후 생성된 게 있으면 true
+  const seen=getLastSeen(key);
+  return entries.some(e=>(e.createdAt||0) > seen);
+}
+const NEW_BADGE=`<span style="background:#e85555;color:#fff;font-size:9px;font-weight:800;border-radius:4px;padding:1px 5px;margin-left:4px;flex-shrink:0;">NEW</span>`;
+
 function showToast(msg, type=''){
   const t = document.getElementById('toast');
   t.textContent = msg; t.className = 'toast show'+(type?' '+type:'');
@@ -869,6 +910,7 @@ function startListeners(){
       })(),
       maxDealer: v.maxDealer??DEFAULT.maxDealer,
       maxSupport:v.maxSupport??DEFAULT.maxSupport,
+      gameMaxMembers: v.gameMaxMembers??DEFAULT.gameMaxMembers,
       colors:{
         raidNames: (v.colors&&v.colors.raidNames) ? v.colors.raidNames : {},
         diffs:     (v.colors&&v.colors.diffs)     ? v.colors.diffs     : {},
@@ -1005,6 +1047,7 @@ window.navTo = (page, raidName, status) => {
     document.getElementById('topbar-label').textContent=raidName||'종합게임';
     document.querySelectorAll('.sb-game-item').forEach(b=>{ if(b.dataset.type===raidName) b.classList.add('active'); });
     document.getElementById('page-game-detail').classList.add('active');
+    markSeen(`game:${raidName}`);
     renderGamePage(raidName);
   } else if(page==='all'){
     document.getElementById('nav-all').classList.add('active');
@@ -1031,6 +1074,7 @@ window.navTo = (page, raidName, status) => {
     const arr=document.getElementById('arr-'+subKey);
     if(sub){ sub.classList.add('open'); if(arr) arr.textContent='▾'; }
     document.getElementById('page-raid').classList.add('active');
+    markSeen(`raid:${raidName}`);
     renderRaidPage();
   }
   document.getElementById('sidebar').classList.remove('open');
@@ -1082,12 +1126,16 @@ function rebuildSidebar(){
     const c=raidMap[n]||{rec:0,full:0,done:0,total:0};
     const isParentActive=currentRaid===n && !currentStatus;
     const subKey=`sb-sub-${n.replace(/\s/g,'_')}`;
+    // NEW 뱃지: 이 레이드 카테고리의 미확인 항목
+    const raidEntries=entries.filter(([,r])=>r.name===n).map(([,r])=>r);
+    const showNew=hasNew(raidEntries,`raid:${n}`);
     return `
     <button class="sb-item sb-raid-parent ${isParentActive?'active':''}" data-raid="${n}"
       onclick="navTo('raid','${n.replace(/'/g,"\\'")}',null)"
       style="display:flex;align-items:center;">
       <span class="sb-icon">⚔️</span>
       <span style="flex:1;text-align:left;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${n}</span>
+      ${showNew?NEW_BADGE:''}
       ${c.total>0?`<span class="sb-badge">${c.total}</span>`:''}
       <span onclick="event.stopPropagation();toggleRaidSub('${subKey}')" style="padding:0 6px;color:var(--text2);font-size:14px;cursor:pointer;line-height:1;" id="arr-${subKey}">▸</span>
     </button>
@@ -1109,10 +1157,13 @@ function rebuildSidebar(){
   if(gameList){
     gameList.innerHTML=allGameNames.map(t=>{
       const cnt=gameEntries.filter(([,g])=>g.type===t).length;
+      const gameTypeEntries=gameEntries.filter(([,g])=>g.type===t).map(([,g])=>g);
+      const showNew=hasNew(gameTypeEntries,`game:${t}`);
       return `<button class="sb-item sb-game-item ${currentPage==='game-detail'&&currentRaid===t?'active':''}" data-type="${t}"
         onclick="navTo('game-detail','${t.replace(/'/g,"\\'")}')">
         <span class="sb-icon">🎮</span>
         <span style="flex:1;text-align:left;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${t}</span>
+        ${showNew?NEW_BADGE:''}
         ${cnt>0?`<span class="sb-badge">${cnt}</span>`:''}
       </button>`;
     }).join('');
@@ -1550,7 +1601,7 @@ window.openCreateGame=()=>{
   // 인원 select (1~20)
   const maxSel=document.getElementById('fg-max');
   maxSel.innerHTML=[...Array(20)].map((_,i)=>`<option value="${i+1}">${i+1}명</option>`).join('');
-  maxSel.value='8';
+  maxSel.value=String(cfg.gameMaxMembers||8);
   document.getElementById('create-game-modal').classList.add('open');
 };
 window.closeCreateGame=()=>{ document.getElementById('create-game-modal').classList.remove('open'); editingGameId=null; };
@@ -1738,18 +1789,18 @@ window.openSettings=()=>{
   if(!cfgDraft.jobs.jobsByBg||typeof cfgDraft.jobs.jobsByBg!=='object') cfgDraft.jobs.jobsByBg={};
   if(!Array.isArray(cfgDraft.jobs.effects)) cfgDraft.jobs.effects=[];
   if(!Array.isArray(cfgDraft.jobs.combos)) cfgDraft.jobs.combos=[];
+  if(!Array.isArray(cfgDraft.gameNames)) cfgDraft.gameNames=[];
   document.getElementById('dealer-val').textContent=cfgDraft.maxDealer;
   document.getElementById('support-val').textContent=cfgDraft.maxSupport;
-  if(!Array.isArray(cfgDraft.gameNames)) cfgDraft.gameNames=[];
+  document.getElementById('game-max-val').textContent=cfgDraft.gameMaxMembers??8;
   renderStTags();
   renderGameNameTags();
   setTimeout(()=>renderAllJobTabs(), 0);
   renderDiffRaidSelect();
   renderColorPickers();
   document.getElementById('settings-modal').classList.add('open');
-  // 설정 열 때마다 첫 번째 탭(레이드이름)으로 리셋 + 스크롤 상단
-  document.querySelectorAll('.stab').forEach((b,i)=>b.classList.toggle('active',i===0));
-  document.querySelectorAll('.stab-panel').forEach((p,i)=>p.classList.toggle('active',i===0));
+  // 현재 카테고리에 맞는 설정 탭으로 열기
+  switchSettingsCat(currentCat);
   setTimeout(()=>{
     const m=document.querySelector('.settings-modal');
     if(m) m.scrollTop=0;
@@ -1757,10 +1808,33 @@ window.openSettings=()=>{
 };
 window.closeSettings=()=>document.getElementById('settings-modal').classList.remove('open');
 document.getElementById('settings-modal').addEventListener('click',e=>{ if(e.target===e.currentTarget) closeSettings(); });
+
+window.switchSettingsCat=(cat)=>{
+  document.getElementById('st-cat-raid').style.background = cat==='raid'?'var(--accent)':'transparent';
+  document.getElementById('st-cat-raid').style.color      = cat==='raid'?'#fff':'var(--text2)';
+  document.getElementById('st-cat-game').style.background = cat==='game'?'var(--accent)':'transparent';
+  document.getElementById('st-cat-game').style.color      = cat==='game'?'#fff':'var(--text2)';
+  document.getElementById('st-section-raid').style.display = cat==='raid'?'block':'none';
+  document.getElementById('st-section-game').style.display = cat==='game'?'block':'none';
+  // 각 카테고리 첫 탭 활성화
+  document.querySelectorAll('.stab').forEach(b=>b.classList.remove('active'));
+  document.querySelectorAll('.stab-panel').forEach(p=>p.classList.remove('active'));
+  if(cat==='raid'){
+    const firstRaidStab=document.querySelector('#st-section-raid .stab');
+    if(firstRaidStab){ firstRaidStab.classList.add('active'); switchStab('raids',firstRaidStab); }
+  } else {
+    const firstGameStab=document.querySelector('#st-section-game .stab');
+    if(firstGameStab){ firstGameStab.classList.add('active'); switchStab('games',firstGameStab); }
+  }
+};
+
 window.switchStab=(tab,el)=>{
   document.querySelectorAll('.stab').forEach(b=>b.classList.remove('active'));
   document.querySelectorAll('.stab-panel').forEach(p=>p.classList.remove('active'));
-  el.classList.add('active'); document.getElementById('stab-'+tab).classList.add('active');
+  if(el) el.classList.add('active');
+  const panel=document.getElementById('stab-'+tab);
+  if(panel) panel.classList.add('active');
+  if(tab==='jobs') setTimeout(()=>renderAllJobTabs(),0);
 };
 function renderStTags(){
   renderDraggableList('st-raid-tags',cfgDraft.raidNames,'raidNames');
@@ -2149,7 +2223,15 @@ window.stAddDiff=()=>{
   cfgDraft.raidDiffs[_selectedDiffRaid].push(v);
   inp.value=''; renderDiffTagsForSelected();
 };
-window.stepCount=(type,delta)=>{ const key=type==='dealer'?'maxDealer':'maxSupport'; let val=(cfgDraft[key]||1)+delta; if(val<1)val=1;if(val>20)val=20; cfgDraft[key]=val; document.getElementById(type+'-val').textContent=val; };
+window.stepCount=(type,delta)=>{
+  if(type==='gameMax'){
+    let val=(cfgDraft.gameMaxMembers||8)+delta; if(val<1)val=1; if(val>50)val=50;
+    cfgDraft.gameMaxMembers=val; document.getElementById('game-max-val').textContent=val; return;
+  }
+  const key=type==='dealer'?'maxDealer':'maxSupport';
+  let val=(cfgDraft[key]||1)+delta; if(val<1)val=1; if(val>20)val=20;
+  cfgDraft[key]=val; document.getElementById(type+'-val').textContent=val;
+};
 function renderColorPickers(){
   const PALETTE = [
     '#ffffff','#e8eaf0','#8b93a8',
