@@ -391,12 +391,14 @@ body{font-family:'Noto Sans KR',sans-serif;background:var(--bg);color:var(--text
       </div>
       <div class="topbar-actions">
         <button class="btn-top btn-secondary" id="topbar-login-btn" onclick="openAuthModal()" style="display:none;">로그인 / 회원가입</button>
-        <button class="btn-top btn-primary"   id="topbar-create-btn" onclick="openCreate()" style="display:none;">＋ 레이드 생성</button>
+        <button class="btn-top btn-primary" id="topbar-create-btn" onclick="openCreateByMode()" style="display:none;">＋ 레이드 생성</button>
       </div>
     </div>
 
     <div class="page active" id="page-all" style="background-image:radial-gradient(ellipse 80% 50% at 20% -10%,rgba(91,110,245,.07) 0%,transparent 60%);"><div id="content-all"></div></div>
     <div class="page" id="page-raid"><div id="content-raid"></div></div>
+    <div class="page" id="page-game-all"><div id="content-game-all"></div></div>
+    <div class="page" id="page-game-detail"><div id="content-game-detail"></div></div>
   </div>
 </div>
 
@@ -437,7 +439,41 @@ body{font-family:'Noto Sans KR',sans-serif;background:var(--bg);color:var(--text
   </div>
 </div>
 
-<!-- PROFILE MODAL -->
+<!-- CREATE GAME MODAL -->
+<div class="modal-overlay" id="create-game-modal">
+  <div class="modal" style="max-width:440px;">
+    <div class="modal-title" id="create-game-modal-title">🎮 종합게임 생성</div>
+    <div class="form-group"><label>게임 종류</label><input type="text" id="fg-type" placeholder="예) 마피아, 롤, 발로란트" maxlength="30" style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:9px 12px;color:var(--text);font-size:14px;font-family:'Noto Sans KR',sans-serif;outline:none;" onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border)'"></div>
+    <div class="form-row">
+      <div class="form-group"><label>날짜</label><input type="date" id="fg-date"></div>
+      <div class="form-group">
+        <label>시간</label>
+        <div style="display:flex;gap:5px;">
+          <select id="fg-ampm" style="flex:1;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:8px 6px;color:var(--text);font-size:13px;font-family:'Noto Sans KR',sans-serif;outline:none;">
+            <option value="AM">오전</option><option value="PM">오후</option>
+          </select>
+          <select id="fg-hour" style="flex:1;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:8px 6px;color:var(--text);font-size:13px;font-family:'Noto Sans KR',sans-serif;outline:none;">
+            <option>1</option><option>2</option><option>3</option><option>4</option><option>5</option><option>6</option>
+            <option>7</option><option>8</option><option>9</option><option>10</option><option>11</option><option>12</option>
+          </select>
+          <select id="fg-min" style="flex:1;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:8px 6px;color:var(--text);font-size:13px;font-family:'Noto Sans KR',sans-serif;outline:none;">
+            <option value="00">00</option><option value="10">10</option><option value="20">20</option>
+            <option value="30">30</option><option value="40">40</option><option value="50">50</option>
+          </select>
+        </div>
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label>인원</label><select id="fg-max"></select></div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn-mcancel" onclick="closeCreateGame()">취소</button>
+      <button class="btn-confirm" id="create-game-confirm-btn" onclick="submitGame()">생성</button>
+    </div>
+  </div>
+</div>
+
+
 <div class="modal-overlay" id="profile-modal">
   <div class="modal" style="max-width:400px;">
     <div class="modal-title">👤 내 정보 수정</div>
@@ -688,8 +724,29 @@ const DEFAULT = {
 let cfg = JSON.parse(JSON.stringify(DEFAULT));
 let cfgDraft = null;
 let raidsData = {};
+let gamesData = {};
 let currentUser = null;
 let currentPage = 'all';
+let currentCat  = 'raid'; // 'raid' | 'game'
+
+window.switchCat=(cat)=>{
+  currentCat=cat;
+  document.getElementById('cat-tab-raid').style.background = cat==='raid'?'var(--accent)':'transparent';
+  document.getElementById('cat-tab-raid').style.color      = cat==='raid'?'#fff':'var(--text2)';
+  document.getElementById('cat-tab-game').style.background = cat==='game'?'var(--accent)':'transparent';
+  document.getElementById('cat-tab-game').style.color      = cat==='game'?'#fff':'var(--text2)';
+  document.getElementById('cat-section-raid').style.display = cat==='raid'?'block':'none';
+  document.getElementById('cat-section-game').style.display = cat==='game'?'block':'none';
+  // 생성 버튼 레이블 변경
+  const btn=document.getElementById('topbar-create-btn');
+  if(btn) btn.textContent = cat==='game'?'＋ 게임 생성':'＋ 레이드 생성';
+  if(cat==='raid') navTo('all');
+  else navTo('game-all');
+};
+window.openCreateByMode=()=>{
+  if(currentCat==='game') openCreateGame();
+  else openCreate();
+};
 // legacy removed
 let editingRaidId = null;
 
@@ -814,6 +871,11 @@ function startListeners(){
   });
   // 30초마다 카드 재렌더 → 출발시간 기반 자동 상태 갱신
   setInterval(()=>renderAll(), 30000);
+  // 종합게임 리스너
+  onValue(ref(db,'games'), snap=>{
+    gamesData = snap.val()||{};
+    renderAll();
+  });
 }
 
 // ── AUTH ──
@@ -923,12 +985,23 @@ window.navTo = (page, raidName, status) => {
   document.querySelectorAll('.sb-item').forEach(b=>b.classList.remove('active'));
   document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
 
-  if(page==='all'){
+  if(page==='game-all'){
+    document.getElementById('nav-game-all')?.classList.add('active');
+    document.getElementById('topbar-icon').textContent='🎮';
+    document.getElementById('topbar-label').textContent='종합게임 전체';
+    document.getElementById('page-game-all').classList.add('active');
+    renderGamePage('all');
+  } else if(page==='game-detail'){
+    document.getElementById('topbar-icon').textContent='🎮';
+    document.getElementById('topbar-label').textContent=raidName||'종합게임';
+    document.querySelectorAll('.sb-game-item').forEach(b=>{ if(b.dataset.type===raidName) b.classList.add('active'); });
+    document.getElementById('page-game-detail').classList.add('active');
+    renderGamePage(raidName);
+  } else if(page==='all'){
     document.getElementById('nav-all').classList.add('active');
     document.getElementById('topbar-icon').textContent='📋';
     document.getElementById('topbar-label').textContent='전체 레이드';
     document.getElementById('page-all').classList.add('active');
-    // 전체 누르면 모든 서브메뉴 접기
     document.querySelectorAll('.sb-sub').forEach(s=>{
       s.classList.remove('open');
       const arr=document.getElementById('arr-'+s.id); if(arr) arr.textContent='▸';
@@ -944,7 +1017,6 @@ window.navTo = (page, raidName, status) => {
     const key = `${raidName}::${status||'all'}`;
     document.querySelectorAll('.sb-raid-sub').forEach(b=>{ if(b.dataset.key===key) b.classList.add('active'); });
     document.querySelectorAll('.sb-raid-parent').forEach(b=>{ if(b.dataset.raid===raidName) b.classList.add('active'); });
-    // 해당 레이드 서브메뉴만 펼치기
     const subKey=`sb-sub-${raidName.replace(/\s/g,'_')}`;
     const sub=document.getElementById(subKey);
     const arr=document.getElementById('arr-'+subKey);
@@ -974,6 +1046,8 @@ window.toggleRaidSub = (subKey) => {
 function renderAll(){
   rebuildSidebar();
   if(currentPage==='raid') renderRaidPage();
+  else if(currentPage==='game-all') renderGamePage('all');
+  else if(currentPage==='game-detail') renderGamePage(currentRaid);
   else renderPage('all');
 }
 
@@ -1014,6 +1088,24 @@ function rebuildSidebar(){
       ${c.done>0?`<button class="sb-item sb-raid-sub done-item ${currentRaid===n&&currentStatus==='done'?'active':''}" data-key="${n}::done" onclick="navTo('raid','${n.replace(/'/g,"\\'")}','done')"><span class="sb-icon">⭐</span>레이드완료<span class="sb-badge">${c.done}</span></button>`:''}
     </div>`;
   }).join('');
+
+  // 종합게임 사이드바
+  const gameEntries=Object.entries(gamesData||{});
+  const gameBadge=document.getElementById('badge-game-all');
+  if(gameBadge) gameBadge.textContent=gameEntries.length;
+  const gameTypes=[...new Set(gameEntries.map(([,g])=>g.type).filter(Boolean))];
+  const gameList=document.getElementById('sb-game-list');
+  if(gameList){
+    gameList.innerHTML=gameTypes.map(t=>{
+      const cnt=gameEntries.filter(([,g])=>g.type===t).length;
+      return `<button class="sb-item sb-game-item ${currentPage==='game-detail'&&currentRaid===t?'active':''}" data-type="${t}"
+        onclick="navTo('game-detail','${t.replace(/'/g,"\\'")}')">
+        <span class="sb-icon">🎮</span>
+        <span style="flex:1;text-align:left;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${t}</span>
+        <span class="sb-badge">${cnt}</span>
+      </button>`;
+    }).join('');
+  }
 }
 
 function renderPage(page){
@@ -1428,12 +1520,204 @@ window.submitRaid=async()=>{
       showToast('✓ 레이드가 생성되었습니다!','success');
     }
     closeCreate();
-    if(!editingRaidId) navTo('all');
+    if(!editingRaidId){ switchCat('raid'); navTo('all'); }
   } catch(e){ showToast((editingRaidId?'수정':'생성')+' 실패: '+e.message,'error'); }
 };
 
+// ── 종합게임 ──
+let editingGameId = null;
+
+window.openCreateGame=()=>{
+  if(!isLoggedIn()){ openAuthModal(); return; }
+  editingGameId=null;
+  document.getElementById('create-game-modal-title').textContent='🎮 종합게임 생성';
+  document.getElementById('create-game-confirm-btn').textContent='생성';
+  document.getElementById('fg-type').value='';
+  const now=new Date();
+  document.getElementById('fg-date').value=now.toISOString().split('T')[0];
+  setGameTimePickers(null);
+  // 인원 select (1~20)
+  const maxSel=document.getElementById('fg-max');
+  maxSel.innerHTML=[...Array(20)].map((_,i)=>`<option value="${i+1}">${i+1}명</option>`).join('');
+  maxSel.value='8';
+  document.getElementById('create-game-modal').classList.add('open');
+};
+window.closeCreateGame=()=>{ document.getElementById('create-game-modal').classList.remove('open'); editingGameId=null; };
+document.getElementById('create-game-modal').addEventListener('click',e=>{ if(e.target===e.currentTarget) closeCreateGame(); });
+
+function setGameTimePickers(timeStr){
+  const now=new Date();
+  const [hh,mm]=(timeStr||`${now.getHours()}:${now.getMinutes()}`).split(':').map(Number);
+  const ampm=hh<12?'AM':'PM';
+  const h12=hh===0?12:hh>12?hh-12:hh;
+  const minR=Math.round(mm/10)*10;
+  document.getElementById('fg-ampm').value=ampm;
+  document.getElementById('fg-hour').value=String(h12);
+  document.getElementById('fg-min').value=String(minR).padStart(2,'0');
+}
+function getGameTime(){
+  const ampm=document.getElementById('fg-ampm').value;
+  const h12=parseInt(document.getElementById('fg-hour').value);
+  const min=document.getElementById('fg-min').value;
+  let h24=h12;
+  if(ampm==='AM'&&h12===12) h24=0;
+  else if(ampm==='PM'&&h12!==12) h24=h12+12;
+  return `${String(h24).padStart(2,'0')}:${min}`;
+}
+
+window.submitGame=async()=>{
+  const type=document.getElementById('fg-type').value.trim();
+  const date=document.getElementById('fg-date').value;
+  const time=getGameTime();
+  const maxMembers=parseInt(document.getElementById('fg-max').value);
+  if(!type){ showToast('게임 종류를 입력해주세요','error'); return; }
+  if(!date){ showToast('날짜를 선택해주세요','error'); return; }
+  const d=new Date(date); const days=['일','월','화','수','목','금','토'];
+  const dateStr=`${d.getMonth()+1}/${d.getDate()}(${days[d.getDay()]})`;
+  try{
+    if(editingGameId){
+      await update(ref(db,`games/${editingGameId}`),{type,date:dateStr,time,maxMembers});
+      showToast('✓ 수정되었습니다','success');
+    } else {
+      await push(ref(db,'games'),{type,date:dateStr,time,maxMembers,
+        done:false,closed:false,createdAt:Date.now(),
+        createdBy:currentUser?.displayName||'',members:{}});
+      showToast('✓ 게임이 생성되었습니다!','success');
+    }
+    closeCreateGame();
+    switchCat('game');
+    navTo('game-all');
+  } catch(e){ showToast('생성 실패: '+e.message,'error'); }
+};
+
+// 게임 카드
+function gameCardHTML(id, g){
+  const members=g.members?Object.values(g.members):[];
+  const myNick=currentUser?.displayName||'';
+  const isMeIn=members.some(m=>m.nick===myNick||m===myNick);
+  const full=members.length>=g.maxMembers;
+  const done=!!g.done;
+  const li=isLoggedIn(), admin=isAdmin();
+  const isOwner=li&&(currentUser.displayName===g.createdBy||isAdmin());
+  const pct=Math.min(100,Math.round(members.length/g.maxMembers*100));
+
+  const sc=done?'done':full?'full':'recruiting';
+  const statusLabel=done?'완료':full?'마감':'모집 중';
+
+  const memberSlots=[...Array(g.maxMembers)].map((_,i)=>{
+    const m=members[i];
+    if(!m) return `<div class="slot-empty">— 빈자리</div>`;
+    const nick=typeof m==='object'?m.nick:m;
+    return `<div class="member-tag${nick===myNick?' me':''}"><span class="role-dot" style="background:var(--accent);"></span><span style="color:#fff;font-weight:700;">${nick}</span></div>`;
+  }).join('');
+
+  const mgmtBtns=li?`
+    ${isOwner?`<button class="hdr-btn hdr-edit" onclick="window._editGame('${id}')">수정</button>`:''}
+    <button class="hdr-btn hdr-delete" onclick="window._deleteGame('${id}')">삭제</button>
+    ${done
+      ?`<button class="hdr-btn hdr-undone" ${admin?'':'disabled'} onclick="window._toggleGameDone('${id}',false)">↩ 되돌리기</button>`
+      :`<button class="hdr-btn hdr-done" onclick="window._toggleGameDone('${id}',true)">완료</button>`
+    }`:'';
+
+  const actionRow=done?''
+    :full?`<div class="login-required-msg" style="color:var(--red);border-top:1px solid var(--border);padding:10px 15px 12px;">🔒 모집이 마감되었습니다</div>`
+    :!li?`<div class="login-required-msg">참여하려면 <a onclick="openAuthModal()">로그인</a>이 필요합니다</div>`
+    :`<div class="card-actions">
+      <button class="action-btn btn-dealer" ${isMeIn||full?'disabled':''} onclick="window._joinGame('${id}')">＋ 참여 신청</button>
+      <button class="action-btn btn-cancel" ${!isMeIn?'disabled':''} onclick="window._leaveGame('${id}')">신청 취소</button>
+    </div>`;
+
+  return `<div class="raid-card ${done?'done-card':full?'full-card':''}">
+    <div class="card-header">
+      <div class="card-title-group">
+        <span class="card-title">🎮 ${g.type||'게임'}</span>
+        <span class="card-status ${sc}">${statusLabel}</span>
+      </div>
+      <div class="card-header-right">${mgmtBtns}</div>
+    </div>
+    <div class="card-meta">
+      <div class="meta-item"><span class="meta-label">출발 시간</span><span class="meta-value">${g.date} ${formatTime(g.time)}</span></div>
+      <div class="meta-item"><span class="meta-label">인원</span><span class="meta-value">${members.length}/${g.maxMembers}</span></div>
+      ${g.createdBy?`<div class="meta-item"><span class="meta-label">작성자</span><span class="meta-value">${g.createdBy}</span></div>`:''}
+    </div>
+    <div class="progress-wrap">
+      <div class="progress-label"><span>참여 현황</span><span>${members.length}/${g.maxMembers}명</span></div>
+      <div class="progress-bar"><div class="progress-fill ${pct>=100?'done-fill':''}" style="width:${pct}%"></div></div>
+    </div>
+    <div class="roles-row"><div class="role-col" style="width:100%;">
+      <div class="role-header" style="color:var(--accent);">참여자 ${members.length}/${g.maxMembers}</div>
+      ${memberSlots}
+    </div></div>
+    ${actionRow}
+  </div>`;
+}
+
+function renderGamePage(filter){
+  const entries=Object.entries(gamesData).sort((a,b)=>b[1].createdAt-a[1].createdAt);
+  const filtered=filter==='all'?entries:entries.filter(([,g])=>g.type===filter);
+  const el=document.getElementById(filter==='all'?'content-game-all':'content-game-detail');
+  if(!el) return;
+  if(!filtered.length){
+    el.innerHTML=`<div class="empty-state"><span class="empty-icon">🎮</span>종합게임이 없습니다.</div>`;
+    return;
+  }
+  el.innerHTML=`<div class="raids-grid">${filtered.map(([id,g])=>gameCardHTML(id,g)).join('')}</div>`;
+}
+
+window._joinGame=async(id)=>{
+  if(!isLoggedIn()){ openAuthModal(); return; }
+  const g=gamesData[id]; if(!g) return;
+  const myNick=currentUser.displayName;
+  const members=g.members?Object.values(g.members):[];
+  if(members.some(m=>(typeof m==='object'?m.nick:m)===myNick)){ showToast('이미 참여 중입니다','error'); return; }
+  if(members.length>=g.maxMembers){ showToast('인원이 꽉 찼습니다','error'); return; }
+  try{
+    await push(ref(db,`games/${id}/members`),{nick:myNick});
+    showToast('✓ 참여 신청 완료!','success');
+  } catch(e){ showToast('오류: '+e.message,'error'); }
+};
+window._leaveGame=async(id)=>{
+  if(!isLoggedIn()) return;
+  const myNick=currentUser.displayName;
+  const g=gamesData[id]; if(!g||!g.members) return;
+  try{
+    for(const [k,v] of Object.entries(g.members)){
+      const nick=typeof v==='object'?v.nick:v;
+      if(nick===myNick) await remove(ref(db,`games/${id}/members/${k}`));
+    }
+    showToast('신청이 취소되었습니다');
+  } catch(e){ showToast('오류: '+e.message,'error'); }
+};
+window._deleteGame=async(id)=>{
+  if(!confirm('정말 삭제하시겠습니까?')) return;
+  try{ await remove(ref(db,`games/${id}`)); showToast('삭제되었습니다'); }
+  catch(e){ showToast('오류: '+e.message,'error'); }
+};
+window._editGame=(id)=>{
+  if(!isLoggedIn()) return;
+  const g=gamesData[id]; if(!g) return;
+  editingGameId=id;
+  document.getElementById('create-game-modal-title').textContent='🎮 종합게임 수정';
+  document.getElementById('create-game-confirm-btn').textContent='수정';
+  document.getElementById('fg-type').value=g.type||'';
+  document.getElementById('fg-date').value=''; // 날짜 파싱은 복잡하므로 오늘로
+  const now=new Date(); document.getElementById('fg-date').value=now.toISOString().split('T')[0];
+  setGameTimePickers(g.time||null);
+  const maxSel=document.getElementById('fg-max');
+  maxSel.innerHTML=[...Array(20)].map((_,i)=>`<option value="${i+1}">${i+1}명</option>`).join('');
+  maxSel.value=String(g.maxMembers||8);
+  document.getElementById('create-game-modal').classList.add('open');
+};
+window._toggleGameDone=async(id,done)=>{
+  if(!done&&!isAdmin()){ showToast('관리자만 되돌릴 수 있습니다','error'); return; }
+  try{
+    await update(ref(db,`games/${id}`),{done});
+    showToast(done?'✓ 완료 처리되었습니다':'↩ 모집 중으로 변경되었습니다','success');
+  } catch(e){ showToast('오류: '+e.message,'error'); }
+};
+
+
 // ── SETTINGS ──
-window.openSettings=()=>{
   cfgDraft=JSON.parse(JSON.stringify(cfg));
   if(!cfgDraft.colors) cfgDraft.colors={raidNames:{},diffs:{},raidDiffs:{}};
   if(!cfgDraft.raidDiffs) cfgDraft.raidDiffs={};
