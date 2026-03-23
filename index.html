@@ -355,7 +355,7 @@ body{font-family:'Noto Sans KR',sans-serif;background:var(--bg);color:var(--text
       </button>
     </nav>
     <div id="sb-bottom-guest" class="sb-guest">
-      <div class="sb-guest-txt">로그인하면 일정등록이 가능합니다</div>
+      <div class="sb-guest-txt">로그인이 필요합니다</div>
       <button class="btn-sb-login" onclick="openAuthModal()">로그인 / 회원가입</button>
     </div>
     <div id="sb-bottom-user" class="sb-user" style="display:none;">
@@ -505,7 +505,7 @@ const firebaseConfig = {
 };
 
 // ── 관리자 이메일 설정 ──
-const ADMIN_EMAIL = "admin@raidhub.com"; // ← 본인 이메일로 변경
+const ADMIN_EMAIL = "yoona4320@naver.com"; // ← 관리자 이메일
 
 const fbApp = initializeApp(firebaseConfig);
 const auth  = getAuth(fbApp);
