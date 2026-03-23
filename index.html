@@ -330,30 +330,17 @@ body{font-family:'Noto Sans KR',sans-serif;background:var(--bg);color:var(--text
 <!-- APP -->
 <div class="app" id="app">
   <aside class="sidebar" id="sidebar">
-    <div class="sb-logo">레이드 현황</div>
+    <div class="sb-logo" onclick="navTo('all')" style="cursor:pointer;">레이드 현황</div>
     <nav class="sb-nav">
-      <div class="sb-section">모집 현황</div>
+      <div class="sb-section">레이드 목록</div>
+      <!-- 전체 보기 -->
       <button class="sb-item active" id="nav-all" onclick="navTo('all')">
         <span class="sb-icon">📋</span> 전체
         <span class="sb-badge" id="badge-all">0</span>
       </button>
-      <button class="sb-item" id="nav-recruiting" onclick="navTo('recruiting')" >
-        <span class="sb-icon">🔍</span> 모집 중
-        <span class="sb-badge" id="badge-rec">0</span>
-        <span class="sb-arrow" id="arrow-rec">▾</span>
-      </button>
-      <div class="sb-sub open" id="sb-sub-recruiting"></div>
-      <button class="sb-item full-item" id="nav-full" onclick="navTo('full')">
-        <span class="sb-icon">🔒</span> 마감
-        <span class="sb-badge" id="badge-full">0</span>
-        <span class="sb-arrow" id="arrow-full">▾</span>
-      </button>
-      <div class="sb-sub open" id="sb-sub-full"></div>
-      <div class="sb-divider"></div>
-      <button class="sb-item done-item" id="nav-done" onclick="navTo('done')">
-        <span class="sb-icon">⭐</span> 레이드완료
-        <span class="sb-badge" id="badge-done">0</span>
-      </button>
+      <!-- 레이드별 동적 메뉴 -->
+      <div id="sb-raid-list"></div>
+
       <div class="sb-divider" id="settings-divider" style="display:none;"></div>
       <button class="sb-item" id="nav-settings" onclick="openSettings()" style="display:none;">
         <span class="sb-icon">⚙️</span> 설정
@@ -370,6 +357,7 @@ body{font-family:'Noto Sans KR',sans-serif;background:var(--bg);color:var(--text
       </div>
       <div class="sb-user-nick" id="sb-nick">-</div>
       <div class="sb-user-email" id="sb-email">-</div>
+      <button class="btn-logout" style="margin-bottom:6px;" onclick="openProfileModal()">내 정보 수정</button>
       <button class="btn-logout" onclick="doLogout()">로그아웃</button>
     </div>
   </aside>
@@ -386,11 +374,8 @@ body{font-family:'Noto Sans KR',sans-serif;background:var(--bg);color:var(--text
       </div>
     </div>
 
-    <div class="page active" id="page-all"        style="background-image:radial-gradient(ellipse 80% 50% at 20% -10%,rgba(91,110,245,.07) 0%,transparent 60%);"><div id="content-all"></div></div>
-    <div class="page"        id="page-recruiting"  style="background-image:radial-gradient(ellipse 80% 50% at 20% -10%,rgba(62,207,142,.06) 0%,transparent 60%);"><div id="content-recruiting"></div></div>
-    <div class="page"        id="page-full"        style="background-image:radial-gradient(ellipse 80% 50% at 20% -10%,rgba(232,85,85,.06) 0%,transparent 60%);"><div id="content-full"></div></div>
-    <div class="page"        id="page-done"><div id="content-done"></div></div>
-    <div class="page"        id="page-sub"><div id="content-sub"></div></div>
+    <div class="page active" id="page-all" style="background-image:radial-gradient(ellipse 80% 50% at 20% -10%,rgba(91,110,245,.07) 0%,transparent 60%);"><div id="content-all"></div></div>
+    <div class="page" id="page-raid"><div id="content-raid"></div></div>
   </div>
 </div>
 
@@ -401,7 +386,7 @@ body{font-family:'Noto Sans KR',sans-serif;background:var(--bg);color:var(--text
     <div class="form-group"><label>레이드 이름</label><select id="f-name" onchange="onRaidNameChange(this.value)"></select></div>
     <div class="form-row">
       <div class="form-group"><label>날짜</label><input type="date" id="f-date"></div>
-      <div class="form-group"><label>시간</label><input type="time" id="f-time" value="23:00"></div>
+      <div class="form-group"><label>시간</label><input type="time" id="f-time" step="600"></div>
     </div>
     <div class="form-group" id="f-diff-group"><label>난이도</label><select id="f-diff"></select></div>
     <div class="form-row">
@@ -411,6 +396,34 @@ body{font-family:'Noto Sans KR',sans-serif;background:var(--bg);color:var(--text
     <div class="modal-actions">
       <button class="btn-mcancel" onclick="closeCreate()">취소</button>
       <button class="btn-confirm" id="create-confirm-btn" onclick="submitRaid()">생성</button>
+    </div>
+  </div>
+</div>
+
+<!-- PROFILE MODAL -->
+<div class="modal-overlay" id="profile-modal">
+  <div class="modal" style="max-width:400px;">
+    <div class="modal-title">👤 내 정보 수정</div>
+    <div class="form-group">
+      <label>아이디 (이메일)</label>
+      <input type="text" id="p-email" disabled style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:9px 12px;color:var(--text3);font-size:14px;font-family:'Noto Sans KR',sans-serif;outline:none;opacity:.6;">
+    </div>
+    <div class="form-group">
+      <label>닉네임</label>
+      <input type="text" id="p-nick" maxlength="12" style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:9px 12px;color:var(--text);font-size:14px;font-family:'Noto Sans KR',sans-serif;outline:none;transition:border-color .2s;" onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border)'">
+    </div>
+    <div class="form-group">
+      <label>새 비밀번호 <span style="color:var(--text3);font-size:11px;">(변경 시에만 입력)</span></label>
+      <input type="password" id="p-pass" placeholder="6자 이상" style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:9px 12px;color:var(--text);font-size:14px;font-family:'Noto Sans KR',sans-serif;outline:none;transition:border-color .2s;" onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border)'">
+    </div>
+    <div class="form-group">
+      <label>비밀번호 확인</label>
+      <input type="password" id="p-pass2" placeholder="비밀번호 재입력" style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:9px 12px;color:var(--text);font-size:14px;font-family:'Noto Sans KR',sans-serif;outline:none;transition:border-color .2s;" onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border)'" onkeydown="if(event.key==='Enter')saveProfile()">
+    </div>
+    <div class="auth-err" id="profile-err"></div>
+    <div class="modal-actions">
+      <button class="btn-mcancel" onclick="closeProfileModal()">취소</button>
+      <button class="btn-confirm" onclick="saveProfile()">저장</button>
     </div>
   </div>
 </div>
@@ -480,40 +493,30 @@ body{font-family:'Noto Sans KR',sans-serif;background:var(--bg);color:var(--text
     </div>
     <div class="stab-panel" id="stab-jobs">
       <div class="s-section">
-        <div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap;">
-          <div style="flex:1;min-width:120px;">
-            <div class="s-section-title">역할</div>
-            <select id="job-role-select" onchange="renderJobBgList()" style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:8px 10px;color:var(--text);font-size:13px;font-family:'Noto Sans KR',sans-serif;outline:none;">
-              <option value="dealer">딜러</option>
-              <option value="support">서폿</option>
-            </select>
-          </div>
-          <div style="flex:1;min-width:120px;">
+        <div style="display:flex;gap:8px;margin-bottom:12px;">
+          <div style="flex:1;">
             <div class="s-section-title">배경 선택</div>
             <select id="job-bg-select" onchange="renderJobList()" style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:8px 10px;color:var(--text);font-size:13px;font-family:'Noto Sans KR',sans-serif;outline:none;"></select>
           </div>
-          <div style="flex:1;min-width:120px;">
+          <div style="flex:1;">
             <div class="s-section-title">직업 선택</div>
             <select id="job-job-select" onchange="renderEffectList()" style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:8px 10px;color:var(--text);font-size:13px;font-family:'Noto Sans KR',sans-serif;outline:none;"></select>
           </div>
         </div>
-        <!-- 배경 관리 -->
         <div class="s-section-title">배경 목록</div>
-        <div class="tag-list" id="st-bg-tags" style="margin-bottom:6px;"></div>
+        <div class="tag-list" id="st-bg-tags" style="margin-bottom:6px;max-height:175px;overflow-y:auto;"></div>
         <div class="tag-add-row" style="margin-bottom:14px;">
           <input type="text" id="st-bg-input" placeholder="배경 추가 (예: 아르데타인)" maxlength="20" onkeydown="if(event.key==='Enter')stAddBg()">
           <button class="btn-add-tag" onclick="stAddBg()">＋ 배경</button>
         </div>
-        <!-- 직업 관리 -->
         <div class="s-section-title">직업 목록 (선택된 배경 기준)</div>
-        <div class="tag-list" id="st-job-tags" style="margin-bottom:6px;"></div>
+        <div class="tag-list" id="st-job-tags" style="margin-bottom:6px;max-height:175px;overflow-y:auto;"></div>
         <div class="tag-add-row" style="margin-bottom:14px;">
           <input type="text" id="st-job-input" placeholder="직업 추가 (예: 데헌)" maxlength="15" onkeydown="if(event.key==='Enter')stAddJobItem()">
           <button class="btn-add-tag" onclick="stAddJobItem()">＋ 직업</button>
         </div>
-        <!-- 효과 관리 -->
         <div class="s-section-title">효과 목록 (선택된 직업 기준)</div>
-        <div class="tag-list" id="st-effect-tags" style="margin-bottom:6px;"></div>
+        <div class="tag-list" id="st-effect-tags" style="margin-bottom:6px;max-height:175px;overflow-y:auto;"></div>
         <div class="tag-add-row">
           <input type="text" id="st-effect-input" placeholder="효과 추가 (예: 피증)" maxlength="15" onkeydown="if(event.key==='Enter')stAddEffect()">
           <button class="btn-add-tag" onclick="stAddEffect()">＋ 효과</button>
@@ -568,7 +571,7 @@ body{font-family:'Noto Sans KR',sans-serif;background:var(--bg);color:var(--text
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
 import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword,
-  signOut, onAuthStateChanged, updateProfile,
+  signOut, onAuthStateChanged, updateProfile, updatePassword, EmailAuthProvider, reauthenticateWithCredential,
   setPersistence, browserLocalPersistence, browserSessionPersistence }
   from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
 import { getDatabase, ref, onValue, push, remove, set, update }
@@ -595,8 +598,8 @@ const icons = ['⚔️','🔥','💀','🌑','🌊','⚡','🐉','💎'];
 const DEFAULT = {
   raidNames:[],
   raidDiffs:{},
-  // jobs: { dealer: { bgName: { jobName: [effect,...] } }, support: {...} }
-  jobs:{ dealer:{}, support:{} },
+  // jobs: { bgName: { jobName: [effect,...] } }
+  jobs:{},
   maxDealer:4, maxSupport:2,
   colors:{ raidNames:{}, diffs:{}, raidDiffs:{} }
 };
@@ -606,7 +609,7 @@ let cfgDraft = null;
 let raidsData = {};
 let currentUser = null;
 let currentPage = 'all';
-let currentSubFilter = null; // { type: 'recruiting'|'full', name: string }
+// legacy removed
 let editingRaidId = null;
 
 const isAdmin    = () => currentUser?.email === ADMIN_EMAIL;
@@ -708,7 +711,7 @@ function startListeners(){
     if(v) cfg={
       raidNames: v.raidNames||DEFAULT.raidNames,
       raidDiffs: v.raidDiffs||DEFAULT.raidDiffs,
-      jobs:      { dealer:(v.jobs&&v.jobs.dealer)||{}, support:(v.jobs&&v.jobs.support)||{} },
+      jobs: v.jobs||DEFAULT.jobs,
       maxDealer: v.maxDealer??DEFAULT.maxDealer,
       maxSupport:v.maxSupport??DEFAULT.maxSupport,
       colors:{
@@ -776,40 +779,81 @@ window.doRegister = async () => {
 
 window.doLogout = async () => { await signOut(auth); showToast('로그아웃 되었습니다'); };
 
-// ── NAV ──
-window.navTo = (page, subType, raidName) => {
-  // collapse toggle: clicking 모집중/마감 parent also toggles sub-menu
-  if((page==='recruiting'||page==='full') && !subType){
-    const sub = document.getElementById(`sb-sub-${page==='recruiting'?'recruiting':'full'}`);
-    const arrow = document.getElementById(`arrow-${page==='recruiting'?'rec':'full'}`);
-    const navBtn = document.getElementById(`nav-${page}`);
-    const isOpen = sub.classList.contains('open');
-    sub.classList.toggle('open', !isOpen);
-    if(arrow) arrow.textContent = isOpen ? '▸' : '▾';
-    navBtn.classList.toggle('collapsed', isOpen);
+// ── 회원정보 수정 ──
+window.openProfileModal = () => {
+  if(!currentUser) return;
+  document.getElementById('p-email').value = currentUser.email||'';
+  document.getElementById('p-nick').value  = currentUser.displayName||'';
+  document.getElementById('p-pass').value  = '';
+  document.getElementById('p-pass2').value = '';
+  document.getElementById('profile-err').textContent = '';
+  document.getElementById('profile-modal').classList.add('open');
+};
+window.closeProfileModal = () => document.getElementById('profile-modal').classList.remove('open');
+document.getElementById('profile-modal').addEventListener('click', e=>{ if(e.target===e.currentTarget) closeProfileModal(); });
+window.saveProfile = async () => {
+  const nick  = document.getElementById('p-nick').value.trim();
+  const pass  = document.getElementById('p-pass').value;
+  const pass2 = document.getElementById('p-pass2').value;
+  const errEl = document.getElementById('profile-err');
+  errEl.textContent='';
+  if(!nick){ errEl.textContent='닉네임을 입력해주세요.'; return; }
+  if(pass && pass.length<6){ errEl.textContent='비밀번호는 6자 이상이어야 합니다.'; return; }
+  if(pass && pass!==pass2){ errEl.textContent='비밀번호가 일치하지 않습니다.'; return; }
+  try{
+    // 닉네임 변경
+    if(nick !== currentUser.displayName){
+      await updateProfile(currentUser, {displayName:nick});
+      await set(ref(db,`users/${currentUser.uid}/nick`), nick);
+      document.getElementById('sb-nick').textContent = nick;
+    }
+    // 비밀번호 변경
+    if(pass){
+      await updatePassword(currentUser, pass);
+    }
+    closeProfileModal();
+    showToast('✓ 회원정보가 수정되었습니다','success');
+  } catch(e){
+    const m={'auth/requires-recent-login':'보안을 위해 재로그인 후 다시 시도해주세요.','auth/weak-password':'비밀번호가 너무 약합니다.'};
+    errEl.textContent = m[e.code]||e.message;
   }
-  currentPage = page;
-  currentSubFilter = (subType && raidName) ? {type:subType, name:raidName} : null;
+};
+
+// ── NAV ──
+// currentPage: 'all' | 'raid'
+// currentRaid: null | raidName string
+// currentStatus: null | 'recruiting' | 'full' | 'done'
+let currentRaid   = null;
+let currentStatus = null;
+
+window.navTo = (page, raidName, status) => {
+  currentPage   = page;
+  currentRaid   = raidName || null;
+  currentStatus = status  || null;
+
   document.querySelectorAll('.sb-item').forEach(b=>b.classList.remove('active'));
   document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
 
-  const titles    = {all:'전체 레이드', recruiting:'모집 중', full:'마감', done:'레이드완료'};
-  const pageIcons = {all:'📋', recruiting:'🔍', full:'🔒', done:'⭐'};
-  const icon  = currentSubFilter ? pageIcons[subType]||'🔍' : (pageIcons[page]||'📋');
-  const label = currentSubFilter ? `${currentSubFilter.type==='full'?'마감':'모집 중'} · ${raidName}` : (titles[page]||page);
-  document.getElementById('topbar-icon').textContent = icon;
-  document.getElementById('topbar-label').textContent = label;
-
-  if(currentSubFilter){
-    document.getElementById(`nav-${subType}`).classList.add('active');
-    document.querySelectorAll('.sb-sub-item').forEach(b=>{ if(b.dataset.key===`${subType}:${raidName}`) b.classList.add('active'); });
-    document.getElementById('page-sub').classList.add('active');
-    renderSubPage();
+  if(page==='all'){
+    document.getElementById('nav-all').classList.add('active');
+    document.getElementById('topbar-icon').textContent='📋';
+    document.getElementById('topbar-label').textContent='전체 레이드';
+    document.getElementById('page-all').classList.add('active');
+    renderPage('all');
   } else {
-    const el=document.getElementById('nav-'+page);
-    if(el) el.classList.add('active');
-    document.getElementById('page-'+page).classList.add('active');
-    renderPage(page);
+    // raid detail page
+    const icons={recruiting:'🔍',full:'🔒',done:'⭐',all:'📋'};
+    const labels={recruiting:'모집 중',full:'마감',done:'레이드완료',all:'전체'};
+    const icon  = icons[status]  || '📋';
+    const label = status ? `${raidName} · ${labels[status]}` : raidName;
+    document.getElementById('topbar-icon').textContent  = icon;
+    document.getElementById('topbar-label').textContent = label;
+    // highlight sidebar
+    const key = `${raidName}::${status||'all'}`;
+    document.querySelectorAll('.sb-raid-sub').forEach(b=>{ if(b.dataset.key===key) b.classList.add('active'); });
+    document.querySelectorAll('.sb-raid-parent').forEach(b=>{ if(b.dataset.raid===raidName) b.classList.add('active'); });
+    document.getElementById('page-raid').classList.add('active');
+    renderRaidPage();
   }
   document.getElementById('sidebar').classList.remove('open');
 };
@@ -819,43 +863,44 @@ window.toggleSidebar = () => document.getElementById('sidebar').classList.toggle
 // ── RENDER ──
 function renderAll(){
   rebuildSidebar();
-  if(currentSubFilter) renderSubPage();
-  else renderPage(currentPage);
+  if(currentPage==='raid') renderRaidPage();
+  else renderPage('all');
 }
 
 function rebuildSidebar(){
   const entries = Object.entries(raidsData);
-  const notDone = entries.filter(([,r])=>!isEffectivelyDone(r));
-  const recEntries  = notDone.filter(([,r])=>!isEffectivelyClosed(r));
-  const fullEntries = notDone.filter(([,r])=>isEffectivelyClosed(r));
-  const doneEntries = entries.filter(([,r])=>isEffectivelyDone(r));
+  document.getElementById('badge-all').textContent = entries.length;
 
-  document.getElementById('badge-all').textContent  = entries.length;
-  document.getElementById('badge-rec').textContent  = recEntries.length;
-  document.getElementById('badge-full').textContent = fullEntries.length;
-  document.getElementById('badge-done').textContent = doneEntries.length;
+  // 레이드별로 상태 카운트
+  const raidMap = {}; // { raidName: { rec, full, done, total } }
+  entries.forEach(([,r])=>{
+    const n=r.name||'기타';
+    if(!raidMap[n]) raidMap[n]={rec:0,full:0,done:0,total:0};
+    raidMap[n].total++;
+    if(isEffectivelyDone(r)) raidMap[n].done++;
+    else if(isEffectivelyClosed(r)) raidMap[n].full++;
+    else raidMap[n].rec++;
+  });
 
-  // sub-menu: 모집 중 by raid name
-  const recCounts={};
-  recEntries.forEach(([,r])=>{ recCounts[r.name]=(recCounts[r.name]||0)+1; });
-  document.getElementById('sb-sub-recruiting').innerHTML =
-    cfg.raidNames.filter(n=>recCounts[n]>0).map(n=>`
-      <button class="sb-item sb-sub-item ${currentSubFilter?.type==='recruiting'&&currentSubFilter?.name===n?'active':''}"
-        data-key="recruiting:${n}" onclick="navTo('sub','recruiting','${n.replace(/'/g,"\\'")}')">
-        <span class="sb-icon">▸</span>${n}
-        <span class="sb-badge">${recCounts[n]}</span>
-      </button>`).join('');
-
-  // sub-menu: 마감 by raid name
-  const fullCounts={};
-  fullEntries.forEach(([,r])=>{ fullCounts[r.name]=(fullCounts[r.name]||0)+1; });
-  document.getElementById('sb-sub-full').innerHTML =
-    cfg.raidNames.filter(n=>fullCounts[n]>0).map(n=>`
-      <button class="sb-item sb-sub-item full-item ${currentSubFilter?.type==='full'&&currentSubFilter?.name===n?'active':''}"
-        data-key="full:${n}" onclick="navTo('sub','full','${n.replace(/'/g,"\\'")}')">
-        <span class="sb-icon">▸</span>${n}
-        <span class="sb-badge">${fullCounts[n]}</span>
-      </button>`).join('');
+  // 사이드바 레이드 목록 생성
+  const raidNames=[...cfg.raidNames,...Object.keys(raidMap).filter(n=>!cfg.raidNames.includes(n))].filter(n=>raidMap[n]);
+  const list=document.getElementById('sb-raid-list');
+  list.innerHTML=raidNames.map(n=>{
+    const c=raidMap[n];
+    const isParentActive=currentRaid===n && !currentStatus;
+    return `
+    <button class="sb-item sb-raid-parent ${isParentActive?'active':''}" data-raid="${n}"
+      onclick="navTo('raid','${n.replace(/'/g,"\\'")}',null)">
+      <span class="sb-icon">⚔️</span>
+      <span style="flex:1;text-align:left;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${n}</span>
+      <span class="sb-badge">${c.total}</span>
+    </button>
+    <div class="sb-sub open">
+      ${c.rec>0?`<button class="sb-item sb-raid-sub ${currentRaid===n&&currentStatus==='recruiting'?'active':''}" data-key="${n}::recruiting" onclick="navTo('raid','${n.replace(/'/g,"\\'")}','recruiting')"><span class="sb-icon">🔍</span>모집 중<span class="sb-badge">${c.rec}</span></button>`:''}
+      ${c.full>0?`<button class="sb-item sb-raid-sub full-item ${currentRaid===n&&currentStatus==='full'?'active':''}" data-key="${n}::full" onclick="navTo('raid','${n.replace(/'/g,"\\'")}','full')"><span class="sb-icon">🔒</span>마감<span class="sb-badge">${c.full}</span></button>`:''}
+      ${c.done>0?`<button class="sb-item sb-raid-sub done-item ${currentRaid===n&&currentStatus==='done'?'active':''}" data-key="${n}::done" onclick="navTo('raid','${n.replace(/'/g,"\\'")}','done')"><span class="sb-icon">⭐</span>레이드완료<span class="sb-badge">${c.done}</span></button>`:''}
+    </div>`;
+  }).join('');
 }
 
 function renderPage(page){
@@ -871,21 +916,35 @@ function renderPage(page){
     if(!entries.length) html=`<div class="empty-state"><span class="empty-icon">🎮</span>레이드가 없습니다.</div>`;
     document.getElementById('content-all').innerHTML=html;
   }
-  else if(page==='recruiting'){
-    const entries=Object.entries(raidsData).filter(([,r])=>!isEffectivelyDone(r)&&!isEffectivelyClosed(r)).sort((a,b)=>b[1].createdAt-a[1].createdAt);
-    document.getElementById('content-recruiting').innerHTML=
-      entries.length ? groupByName(entries) : `<div class="empty-state"><span class="empty-icon">🔍</span>모집 중인 레이드가 없습니다.</div>`;
+}
+
+function renderRaidPage(){
+  const el=document.getElementById('content-raid');
+  if(!currentRaid){ el.innerHTML=''; return; }
+  let entries=Object.entries(raidsData)
+    .filter(([,r])=>r.name===currentRaid)
+    .sort((a,b)=>b[1].createdAt-a[1].createdAt);
+  if(currentStatus==='recruiting') entries=entries.filter(([,r])=>!isEffectivelyDone(r)&&!isEffectivelyClosed(r));
+  else if(currentStatus==='full')  entries=entries.filter(([,r])=>!isEffectivelyDone(r)&&isEffectivelyClosed(r));
+  else if(currentStatus==='done')  entries=entries.filter(([,r])=>isEffectivelyDone(r));
+
+  if(!entries.length){
+    const lbl={recruiting:'모집 중',full:'마감',done:'레이드완료'}[currentStatus]||'레이드';
+    el.innerHTML=`<div class="empty-state"><span class="empty-icon">🎮</span>${currentRaid} ${lbl} 내역이 없습니다.</div>`;
+    return;
   }
-  else if(page==='full'){
-    const entries=Object.entries(raidsData).filter(([,r])=>!isEffectivelyDone(r)&&isEffectivelyClosed(r)).sort((a,b)=>b[1].createdAt-a[1].createdAt);
-    document.getElementById('content-full').innerHTML=
-      entries.length ? groupByName(entries) : `<div class="empty-state"><span class="empty-icon">🔒</span>마감된 레이드가 없습니다.</div>`;
-  }
-  else if(page==='done'){
-    const entries=Object.entries(raidsData).filter(([,r])=>isEffectivelyDone(r)).sort((a,b)=>b[1].createdAt-a[1].createdAt);
-    document.getElementById('content-done').innerHTML=
-      entries.length ? `<div class="raids-grid">${entries.map(([id,r])=>cardHTML(id,r)).join('')}</div>`
-      : `<div class="empty-state"><span class="empty-icon">⭐</span>레이드완료 내역이 없습니다.</div>`;
+  // status가 없으면 전체를 섹션으로 나눔
+  if(!currentStatus){
+    const rec  = entries.filter(([,r])=>!isEffectivelyDone(r)&&!isEffectivelyClosed(r));
+    const full = entries.filter(([,r])=>!isEffectivelyDone(r)&&isEffectivelyClosed(r));
+    const done = entries.filter(([,r])=>isEffectivelyDone(r));
+    let html='';
+    if(rec.length)  html+=section('🔍 모집 중', rec, '');
+    if(full.length) html+=section('🔒 마감', full, 'red');
+    if(done.length) html+=section('⭐ 레이드완료', done, 'green');
+    el.innerHTML=html;
+  } else {
+    el.innerHTML=`<div class="raids-grid">${entries.map(([id,r])=>cardHTML(id,r)).join('')}</div>`;
   }
 }
 
@@ -974,16 +1033,18 @@ function cardHTML(id, r){
     ?`style="color:${diffColor};background:${diffColor}22;border-color:${diffColor}66;"`
     :`style=""`;
 
-  const isOwner=li&&(currentUser.displayName===r.createdBy||isAdmin());
-  // 마감여부: 수동마감 OR 인원마감 OR 시간마감 (자동완료 제외)
   const isAnyClosed = !done && (manualClosed || isFull(r) || autoStatus==='auto-closed');
+  const isOwner=li&&(currentUser.displayName===r.createdBy||isAdmin());
+  // 마감 상태: 어떤 이유로든 마감이면 마감해제 표시, 아니면 마감 표시
+  const showUnclose = !done && isAnyClosed;
+  const showClose   = !done && !isAnyClosed;
   const mgmtBtns=li?`
     ${isOwner?`<button class="hdr-btn hdr-edit" onclick="window._edit('${id}')">수정</button>`:''}
     <button class="hdr-btn hdr-delete" onclick="window._delete('${id}')">삭제</button>
     ${done
       ?`<button class="hdr-btn hdr-undone" ${admin?'':'disabled title="관리자만 가능"'} onclick="window._toggleDone('${id}',false)">↩ 되돌리기</button>`
       :`${isOwner
-        ?(isAnyClosed
+        ?(showUnclose
           ?`<button class="hdr-btn hdr-unclose" onclick="window._toggleClose('${id}',false)">마감해제</button>`
           :`<button class="hdr-btn hdr-close" onclick="window._toggleClose('${id}',true)">마감</button>`)
         :''
@@ -1046,7 +1107,7 @@ window._openJobModal = (id, role) => {
   const myNick=currentUser.displayName;
   if(dl.includes(myNick)||sp.includes(myNick)){ showToast('이미 참여 중입니다','error'); return; }
   _jobPending={id,role};
-  const jobs=cfg.jobs?.[role]||{};
+  const jobs=cfg.jobs||{};
   const hasBgs=Object.keys(jobs).length>0;
   document.getElementById('job-modal-title').textContent=role==='dealer'?'⚔️ 딜러 직업 선택':'🛡 서폿 직업 선택';
   document.getElementById('job-no-list').style.display=hasBgs?'none':'block';
@@ -1060,23 +1121,20 @@ window._openJobModal = (id, role) => {
   document.getElementById('job-modal').classList.add('open');
 };
 window.jmUpdateJobs=()=>{
-  const role=_jobPending?.role||'dealer';
   const bg=document.getElementById('jm-bg').value;
-  const jobs=Object.keys(cfg.jobs?.[role]?.[bg]||{});
+  const jobs=Object.keys(cfg.jobs?.[bg]||{});
   const sel=document.getElementById('jm-job');
-  sel.innerHTML=jobs.length?jobs.map(j=>`<option value="${j}">${j}</option>`):'<option value="">직업 없음</option>';
+  sel.innerHTML=jobs.length?jobs.map(j=>`<option value="${j}">${j}</option>`).join(''):'<option value="">직업 없음</option>';
   jmUpdateEffects();
 };
 window.jmUpdateEffects=()=>{
-  const role=_jobPending?.role||'dealer';
   const bg=document.getElementById('jm-bg').value;
   const job=document.getElementById('jm-job').value;
-  const effects=cfg.jobs?.[role]?.[bg]?.[job]||[];
+  const effects=cfg.jobs?.[bg]?.[job]||[];
   const cont=document.getElementById('jm-effects');
   const grp=document.getElementById('jm-effect-group');
   grp.style.display=effects.length?'block':'none';
   if(!effects.length){ cont.innerHTML=''; return; }
-  // 효과는 직업에 고정 — 자동 표시
   cont.innerHTML=effects.map(e=>`
     <span style="background:var(--surface2);border:1px solid var(--border);border-radius:7px;
       padding:4px 10px;font-size:12px;color:var(--text);">${e}</span>`).join('');
@@ -1088,7 +1146,7 @@ window.confirmJob=async()=>{
   const {id,role}=_jobPending;
   const bg=document.getElementById('jm-bg')?.value||'';
   const job=document.getElementById('jm-job')?.value||'';
-  const effects=cfg.jobs?.[role]?.[bg]?.[job]||[];
+  const effects=cfg.jobs?.[bg]?.[job]||[];
   const myNick=currentUser.displayName;
   const r=raidsData[id]; if(!r) return;
   const dl=getD(r), sp=getS(r);
@@ -1232,9 +1290,13 @@ window.openSettings=()=>{
   cfgDraft=JSON.parse(JSON.stringify(cfg));
   if(!cfgDraft.colors) cfgDraft.colors={raidNames:{},diffs:{},raidDiffs:{}};
   if(!cfgDraft.raidDiffs) cfgDraft.raidDiffs={};
-  if(!cfgDraft.jobs) cfgDraft.jobs={dealer:{},support:{}};
-  if(Array.isArray(cfgDraft.jobs.dealer)) cfgDraft.jobs.dealer={};
-  if(Array.isArray(cfgDraft.jobs.support)) cfgDraft.jobs.support={};
+  if(!cfgDraft.jobs||Array.isArray(cfgDraft.jobs)) cfgDraft.jobs={};
+  // 구버전 dealer/support 구조 마이그레이션
+  if(cfgDraft.jobs.dealer!==undefined && typeof cfgDraft.jobs.dealer==='object' && !Array.isArray(cfgDraft.jobs.dealer)){
+    const merged={};
+    Object.assign(merged, cfgDraft.jobs.dealer||{}, cfgDraft.jobs.support||{});
+    cfgDraft.jobs=merged;
+  }
   document.getElementById('dealer-val').textContent=cfgDraft.maxDealer;
   document.getElementById('support-val').textContent=cfgDraft.maxSupport;
   renderStTags();
@@ -1253,134 +1315,97 @@ window.switchStab=(tab,el)=>{
 function renderStTags(){
   renderDraggableList('st-raid-tags',cfgDraft.raidNames,'raidNames');
 }
-function renderJobTags(){ /* legacy - no-op now */ }
-window.stDelJob=(role,i)=>{ /* legacy */ };
-window.stAddJob=(role)=>{ /* legacy */ };
-window.stEditJob=(role,i,val)=>{ /* legacy */ };
+function renderJobTags(){ /* legacy - no-op */ }
+window.stDelJob=()=>{}; window.stAddJob=()=>{}; window.stEditJob=()=>{};
 
-// ── 직업 설정 JS (배경>직업>효과) ──
-function getJobRole(){ return document.getElementById('job-role-select')?.value||'dealer'; }
-function getJobBg(){   return document.getElementById('job-bg-select')?.value||''; }
-function getJobJob(){  return document.getElementById('job-job-select')?.value||''; }
+// ── 직업 설정 JS (배경>직업>효과, 딜/폿 구분 없음) ──
+function getJobBg(){  return document.getElementById('job-bg-select')?.value||''; }
+function getJobJob(){ return document.getElementById('job-job-select')?.value||''; }
+
+function initJobDraft(){
+  if(!cfgDraft.jobs||Array.isArray(cfgDraft.jobs)||
+     (cfgDraft.jobs.dealer!==undefined && typeof cfgDraft.jobs.dealer==='object')){
+    cfgDraft.jobs={};
+  }
+}
 
 window.renderJobBgList=()=>{
-  const role=getJobRole();
-  const bgs=Object.keys(cfgDraft.jobs[role]||{});
+  initJobDraft();
+  const bgs=Object.keys(cfgDraft.jobs||{});
   const sel=document.getElementById('job-bg-select');
-  sel.innerHTML=bgs.length ? bgs.map(b=>`<option value="${b}">${b}</option>`).join('') : '<option value="">배경 없음</option>';
+  sel.innerHTML=bgs.length?bgs.map(b=>`<option value="${b}">${b}</option>`).join(''):'<option value="">배경 없음</option>';
   renderBgTags(); renderJobList();
 };
 window.renderJobList=()=>{
-  const role=getJobRole(), bg=getJobBg();
-  const jobs=bg ? Object.keys((cfgDraft.jobs[role]||{})[bg]||{}) : [];
+  const bg=getJobBg();
+  const jobs=bg?Object.keys((cfgDraft.jobs||{})[bg]||{}):[];
   const sel=document.getElementById('job-job-select');
-  sel.innerHTML=jobs.length ? jobs.map(j=>`<option value="${j}">${j}</option>`).join('') : '<option value="">직업 없음</option>';
+  sel.innerHTML=jobs.length?jobs.map(j=>`<option value="${j}">${j}</option>`).join(''):'<option value="">직업 없음</option>';
   renderJobItemTags(); renderEffectList();
 };
 window.renderEffectList=()=>{ renderEffectTags(); };
 
+function tagItemHTML(val, onblurFn, delFn){
+  return `<div class="tag-item">
+    <input class="tag-edit-input" value="${val.replace(/"/g,'&quot;')}" onblur="${onblurFn}" onkeydown="if(event.key==='Enter')this.blur()" style="flex:1;background:transparent;border:none;color:var(--text);font-size:13px;font-family:'Noto Sans KR',sans-serif;outline:none;min-width:0;">
+    <button class="tag-del" onclick="${delFn}">✕</button>
+  </div>`;
+}
 function renderBgTags(){
-  const role=getJobRole();
-  const bgs=Object.keys(cfgDraft.jobs[role]||{});
-  const el=document.getElementById('st-bg-tags');
-  if(!el) return;
-  if(!bgs.length){ el.innerHTML='<span style="color:var(--text3);font-size:12px;">배경 없음</span>'; return; }
-  el.innerHTML=bgs.map((b,i)=>`
-    <div class="tag-item">
-      <span class="tag-drag" style="cursor:default;">⠿</span>
-      <input class="tag-edit-input" value="${b}" onblur="stEditBg('${b}',this.value)" onkeydown="if(event.key==='Enter')this.blur()" style="flex:1;background:transparent;border:none;color:var(--text);font-size:13px;font-family:'Noto Sans KR',sans-serif;outline:none;min-width:0;">
-      <button class="tag-del" onclick="stDelBg('${b}')">✕</button>
-    </div>`).join('');
+  const el=document.getElementById('st-bg-tags'); if(!el) return;
+  const bgs=Object.keys(cfgDraft.jobs||{});
+  el.innerHTML=bgs.length?bgs.map(b=>tagItemHTML(b,`stEditBg('${b.replace(/'/g,"\\'")}',this.value)`,`stDelBg('${b.replace(/'/g,"\\'")}')`)
+    ).join(''):'<span style="color:var(--text3);font-size:12px;">배경 없음</span>';
 }
 function renderJobItemTags(){
-  const role=getJobRole(), bg=getJobBg();
-  const jobs=bg ? Object.keys((cfgDraft.jobs[role]||{})[bg]||{}) : [];
-  const el=document.getElementById('st-job-tags');
-  if(!el) return;
-  if(!bg){ el.innerHTML='<span style="color:var(--text3);font-size:12px;">배경을 먼저 선택하세요</span>'; return; }
-  if(!jobs.length){ el.innerHTML='<span style="color:var(--text3);font-size:12px;">직업 없음</span>'; return; }
-  el.innerHTML=jobs.map(j=>`
-    <div class="tag-item">
-      <span class="tag-drag" style="cursor:default;">⠿</span>
-      <input class="tag-edit-input" value="${j}" onblur="stEditJobItem('${j}',this.value)" onkeydown="if(event.key==='Enter')this.blur()" style="flex:1;background:transparent;border:none;color:var(--text);font-size:13px;font-family:'Noto Sans KR',sans-serif;outline:none;min-width:0;">
-      <button class="tag-del" onclick="stDelJobItem('${j}')">✕</button>
-    </div>`).join('');
+  const bg=getJobBg(); const el=document.getElementById('st-job-tags'); if(!el) return;
+  if(!bg){el.innerHTML='<span style="color:var(--text3);font-size:12px;">배경을 먼저 선택하세요</span>';return;}
+  const jobs=Object.keys((cfgDraft.jobs||{})[bg]||{});
+  el.innerHTML=jobs.length?jobs.map(j=>tagItemHTML(j,`stEditJobItem('${j.replace(/'/g,"\\'")}',this.value)`,`stDelJobItem('${j.replace(/'/g,"\\'")}')`)
+    ).join(''):'<span style="color:var(--text3);font-size:12px;">직업 없음</span>';
 }
 function renderEffectTags(){
-  const role=getJobRole(), bg=getJobBg(), job=getJobJob();
-  const effects=job ? ((cfgDraft.jobs[role]||{})[bg]||{})[job]||[] : [];
-  const el=document.getElementById('st-effect-tags');
-  if(!el) return;
-  if(!job){ el.innerHTML='<span style="color:var(--text3);font-size:12px;">직업을 먼저 선택하세요</span>'; return; }
-  if(!effects.length){ el.innerHTML='<span style="color:var(--text3);font-size:12px;">효과 없음</span>'; return; }
-  el.innerHTML=effects.map((e,i)=>`
-    <div class="tag-item">
-      <input class="tag-edit-input" value="${e}" onblur="stEditEffect(${i},this.value)" onkeydown="if(event.key==='Enter')this.blur()" style="flex:1;background:transparent;border:none;color:var(--text);font-size:13px;font-family:'Noto Sans KR',sans-serif;outline:none;min-width:0;">
-      <button class="tag-del" onclick="stDelEffect(${i})">✕</button>
-    </div>`).join('');
+  const bg=getJobBg(),job=getJobJob(); const el=document.getElementById('st-effect-tags'); if(!el) return;
+  if(!job){el.innerHTML='<span style="color:var(--text3);font-size:12px;">직업을 먼저 선택하세요</span>';return;}
+  const effects=((cfgDraft.jobs||{})[bg]||{})[job]||[];
+  el.innerHTML=effects.length?effects.map((e,i)=>tagItemHTML(e,`stEditEffect(${i},this.value)`,`stDelEffect(${i})`)
+    ).join(''):'<span style="color:var(--text3);font-size:12px;">효과 없음</span>';
 }
 
 window.stAddBg=()=>{
-  const inp=document.getElementById('st-bg-input'), v=inp.value.trim(); if(!v) return;
-  const role=getJobRole();
-  if(!cfgDraft.jobs[role]) cfgDraft.jobs[role]={};
-  if(cfgDraft.jobs[role][v]){showToast('이미 있는 배경입니다','error');return;}
-  cfgDraft.jobs[role][v]={}; inp.value='';
-  renderJobBgList();
+  initJobDraft();
+  const inp=document.getElementById('st-bg-input'),v=inp.value.trim(); if(!v) return;
+  if(cfgDraft.jobs[v]){showToast('이미 있는 배경입니다','error');return;}
+  cfgDraft.jobs[v]={}; inp.value=''; renderJobBgList();
 };
-window.stDelBg=(bg)=>{
-  const role=getJobRole();
-  delete cfgDraft.jobs[role][bg];
-  renderJobBgList();
-};
+window.stDelBg=(bg)=>{ delete cfgDraft.jobs[bg]; renderJobBgList(); };
 window.stEditBg=(oldBg,newBg)=>{
   newBg=newBg.trim(); if(!newBg||newBg===oldBg) return;
-  const role=getJobRole();
-  const data=cfgDraft.jobs[role][oldBg];
-  delete cfgDraft.jobs[role][oldBg];
-  cfgDraft.jobs[role][newBg]=data;
+  const data=cfgDraft.jobs[oldBg]; delete cfgDraft.jobs[oldBg]; cfgDraft.jobs[newBg]=data;
   renderJobBgList();
 };
 window.stAddJobItem=()=>{
-  const inp=document.getElementById('st-job-input'), v=inp.value.trim(); if(!v) return;
-  const role=getJobRole(), bg=getJobBg(); if(!bg){showToast('배경을 먼저 선택하세요','error');return;}
-  if(!cfgDraft.jobs[role][bg]) cfgDraft.jobs[role][bg]={};
-  if(cfgDraft.jobs[role][bg][v]!==undefined){showToast('이미 있는 직업입니다','error');return;}
-  cfgDraft.jobs[role][bg][v]=[]; inp.value='';
-  renderJobList();
+  const inp=document.getElementById('st-job-input'),v=inp.value.trim(); if(!v) return;
+  const bg=getJobBg(); if(!bg){showToast('배경을 먼저 선택하세요','error');return;}
+  if(!cfgDraft.jobs[bg]) cfgDraft.jobs[bg]={};
+  if(cfgDraft.jobs[bg][v]!==undefined){showToast('이미 있는 직업입니다','error');return;}
+  cfgDraft.jobs[bg][v]=[]; inp.value=''; renderJobList();
 };
-window.stDelJobItem=(job)=>{
-  const role=getJobRole(), bg=getJobBg();
-  if(cfgDraft.jobs[role]?.[bg]) delete cfgDraft.jobs[role][bg][job];
-  renderJobList();
-};
+window.stDelJobItem=(job)=>{ const bg=getJobBg(); if(cfgDraft.jobs?.[bg]) delete cfgDraft.jobs[bg][job]; renderJobList(); };
 window.stEditJobItem=(oldJob,newJob)=>{
   newJob=newJob.trim(); if(!newJob||newJob===oldJob) return;
-  const role=getJobRole(), bg=getJobBg();
-  const data=cfgDraft.jobs[role][bg][oldJob];
-  delete cfgDraft.jobs[role][bg][oldJob];
-  cfgDraft.jobs[role][bg][newJob]=data;
-  renderJobList();
+  const bg=getJobBg(); const data=cfgDraft.jobs[bg][oldJob];
+  delete cfgDraft.jobs[bg][oldJob]; cfgDraft.jobs[bg][newJob]=data; renderJobList();
 };
 window.stAddEffect=()=>{
-  const inp=document.getElementById('st-effect-input'), v=inp.value.trim(); if(!v) return;
-  const role=getJobRole(), bg=getJobBg(), job=getJobJob();
-  if(!job){showToast('직업을 먼저 선택하세요','error');return;}
-  const arr=cfgDraft.jobs[role][bg][job]; if(!arr) return;
+  const inp=document.getElementById('st-effect-input'),v=inp.value.trim(); if(!v) return;
+  const bg=getJobBg(),job=getJobJob(); if(!job){showToast('직업을 먼저 선택하세요','error');return;}
+  const arr=cfgDraft.jobs[bg][job]; if(!arr) return;
   if(arr.includes(v)){showToast('이미 있는 효과입니다','error');return;}
   arr.push(v); inp.value=''; renderEffectTags();
 };
-window.stDelEffect=(i)=>{
-  const role=getJobRole(), bg=getJobBg(), job=getJobJob();
-  if(cfgDraft.jobs[role]?.[bg]?.[job]) cfgDraft.jobs[role][bg][job].splice(i,1);
-  renderEffectTags();
-};
-window.stEditEffect=(i,val)=>{
-  val=val.trim(); if(!val) return;
-  const role=getJobRole(), bg=getJobBg(), job=getJobJob();
-  if(cfgDraft.jobs[role]?.[bg]?.[job]) cfgDraft.jobs[role][bg][job][i]=val;
-  renderEffectTags();
-};
+window.stDelEffect=(i)=>{ const bg=getJobBg(),job=getJobJob(); if(cfgDraft.jobs?.[bg]?.[job]) cfgDraft.jobs[bg][job].splice(i,1); renderEffectTags(); };
+window.stEditEffect=(i,val)=>{ val=val.trim(); if(!val) return; const bg=getJobBg(),job=getJobJob(); if(cfgDraft.jobs?.[bg]?.[job]) cfgDraft.jobs[bg][job][i]=val; renderEffectTags(); };
 function renderDraggableList(containerId,items,key){
   const el=document.getElementById(containerId);
   if(!items||!items.length){ el.innerHTML='<span style="color:var(--text3);font-size:12px;">항목 없음 — 아래에서 추가하세요</span>'; return; }
