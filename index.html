@@ -489,56 +489,64 @@ body{font-family:'Noto Sans KR',sans-serif;background:var(--bg);color:var(--text
     </div>
     <div class="stab-panel" id="stab-jobs">
       <div class="s-section">
-        <!-- 직업 서브탭: 배경/직업명 합침, 효과, 직업 -->
         <div style="display:flex;gap:3px;margin-bottom:14px;background:var(--surface);border-radius:8px;padding:3px;">
-          <button class="job-stab active" onclick="switchJobStab('bgnames',this)" style="flex:1;padding:6px;border:none;border-radius:6px;font-size:12px;font-weight:700;cursor:pointer;font-family:'Noto Sans KR',sans-serif;background:var(--accent);color:#fff;transition:all .2s;">배경/직업명</button>
+          <button class="job-stab active" onclick="switchJobStab('bgs',this)" style="flex:1;padding:6px;border:none;border-radius:6px;font-size:12px;font-weight:700;cursor:pointer;font-family:'Noto Sans KR',sans-serif;background:var(--accent);color:#fff;transition:all .2s;">직업배경</button>
+          <button class="job-stab" onclick="switchJobStab('names',this)" style="flex:1;padding:6px;border:none;border-radius:6px;font-size:12px;font-weight:700;cursor:pointer;font-family:'Noto Sans KR',sans-serif;background:transparent;color:var(--text2);transition:all .2s;">직업명</button>
           <button class="job-stab" onclick="switchJobStab('effects',this)" style="flex:1;padding:6px;border:none;border-radius:6px;font-size:12px;font-weight:700;cursor:pointer;font-family:'Noto Sans KR',sans-serif;background:transparent;color:var(--text2);transition:all .2s;">직업효과</button>
           <button class="job-stab" onclick="switchJobStab('combos',this)" style="flex:1;padding:6px;border:none;border-radius:6px;font-size:12px;font-weight:700;cursor:pointer;font-family:'Noto Sans KR',sans-serif;background:transparent;color:var(--text2);transition:all .2s;">직업</button>
         </div>
 
-        <!-- 배경/직업명 통합 -->
-        <div class="job-stab-panel active" id="job-panel-bgnames">
-          <div style="display:flex;gap:12px;">
-            <div style="flex:1;">
-              <div class="s-section-title">직업배경</div>
-              <div class="tag-list" id="st-bg-tags" style="max-height:175px;overflow-y:auto;margin-bottom:8px;"></div>
-              <div class="tag-add-row">
-                <input type="text" id="st-bg-input" placeholder="배경 (예: 아르데타인)" maxlength="20" onkeydown="if(event.key==='Enter')stAddBg()">
-                <button class="btn-add-tag" onclick="stAddBg()">＋</button>
-              </div>
-            </div>
-            <div style="flex:1;">
-              <div class="s-section-title">직업명</div>
-              <div class="tag-list" id="st-jobname-tags" style="max-height:175px;overflow-y:auto;margin-bottom:8px;"></div>
-              <div class="tag-add-row">
-                <input type="text" id="st-jobname-input" placeholder="직업명 (예: 데헌)" maxlength="15" onkeydown="if(event.key==='Enter')stAddJobName()">
-                <button class="btn-add-tag" onclick="stAddJobName()">＋</button>
-              </div>
-            </div>
+        <!-- 직업배경 -->
+        <div class="job-stab-panel active" id="job-panel-bgs">
+          <div class="s-section-title">직업배경 목록 (드래그로 순서 변경)</div>
+          <div class="tag-list" id="st-bg-tags" style="max-height:175px;overflow-y:auto;margin-bottom:8px;"></div>
+          <div class="tag-add-row">
+            <input type="text" id="st-bg-input" placeholder="배경 추가 (예: 아르데타인)" maxlength="20" onkeydown="if(event.key==='Enter')stAddBg()">
+            <button class="btn-add-tag" onclick="stAddBg()">＋ 추가</button>
           </div>
         </div>
 
-        <!-- 직업효과 -->
+        <!-- 직업명: 배경 선택 후 해당 배경의 직업 관리 -->
+        <div class="job-stab-panel" id="job-panel-names" style="display:none;">
+          <div class="s-section-title">배경 선택</div>
+          <select id="st-jobname-bg-sel" onchange="renderJobNamesByBg()"
+            style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:8px;
+            padding:8px 10px;color:var(--text);font-size:13px;font-family:'Noto Sans KR',sans-serif;outline:none;margin-bottom:12px;"></select>
+          <div class="s-section-title">직업명 목록 (선택된 배경 기준)</div>
+          <div class="tag-list" id="st-jobname-tags" style="max-height:150px;overflow-y:auto;margin-bottom:8px;"></div>
+          <div class="tag-add-row">
+            <input type="text" id="st-jobname-input" placeholder="직업명 추가 (예: 데헌)" maxlength="15" onkeydown="if(event.key==='Enter')stAddJobName()">
+            <button class="btn-add-tag" onclick="stAddJobName()">＋ 추가</button>
+          </div>
+        </div>
+
+        <!-- 직업효과: 직업 선택 후 해당 직업의 효과 관리 -->
         <div class="job-stab-panel" id="job-panel-effects" style="display:none;">
-          <div class="s-section-title">직업효과 목록</div>
-          <div class="tag-list" id="st-effect-tags" style="max-height:175px;overflow-y:auto;margin-bottom:8px;"></div>
+          <div style="display:flex;gap:8px;margin-bottom:12px;">
+            <div style="flex:1;">
+              <div class="s-section-title">배경</div>
+              <select id="st-eff-bg-sel" onchange="renderEffectJobSel()"
+                style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:8px 10px;color:var(--text);font-size:12px;font-family:'Noto Sans KR',sans-serif;outline:none;"></select>
+            </div>
+            <div style="flex:1;">
+              <div class="s-section-title">직업명</div>
+              <select id="st-eff-job-sel" onchange="renderEffectTagsByJob()"
+                style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:8px 10px;color:var(--text);font-size:12px;font-family:'Noto Sans KR',sans-serif;outline:none;"></select>
+            </div>
+          </div>
+          <div class="s-section-title">직업효과 목록 (최대 2개)</div>
+          <div class="tag-list" id="st-effect-tags" style="max-height:150px;overflow-y:auto;margin-bottom:8px;"></div>
           <div class="tag-add-row">
             <input type="text" id="st-effect-input" placeholder="효과 추가 (예: 피증)" maxlength="15" onkeydown="if(event.key==='Enter')stAddEffect()">
             <button class="btn-add-tag" onclick="stAddEffect()">＋ 추가</button>
           </div>
         </div>
 
-        <!-- 직업 조합 -->
+        <!-- 직업 조합 목록 -->
         <div class="job-stab-panel" id="job-panel-combos" style="display:none;">
-          <div class="s-section-title">직업 조합 추가</div>
-          <div style="display:flex;gap:7px;margin-bottom:8px;flex-wrap:wrap;">
-            <select id="combo-bg-sel" style="flex:1;min-width:90px;background:var(--surface2);border:1px solid var(--border);border-radius:7px;padding:7px 9px;color:var(--text);font-size:12px;font-family:'Noto Sans KR',sans-serif;outline:none;"></select>
-            <select id="combo-name-sel" style="flex:1;min-width:90px;background:var(--surface2);border:1px solid var(--border);border-radius:7px;padding:7px 9px;color:var(--text);font-size:12px;font-family:'Noto Sans KR',sans-serif;outline:none;"></select>
-            <select id="combo-effect-sel" style="flex:1;min-width:90px;background:var(--surface2);border:1px solid var(--border);border-radius:7px;padding:7px 9px;color:var(--text);font-size:12px;font-family:'Noto Sans KR',sans-serif;outline:none;"></select>
-            <button class="btn-add-tag" onclick="stAddCombo()" style="white-space:nowrap;">＋ 추가</button>
-          </div>
-          <div class="s-section-title" style="margin-top:4px;">저장된 직업 목록</div>
-          <div id="st-combo-tags" style="max-height:200px;overflow-y:auto;display:flex;flex-direction:column;gap:5px;margin-top:6px;"></div>
+          <div class="s-section-title">저장된 직업 목록</div>
+          <div id="st-combo-tags" style="max-height:280px;overflow-y:auto;display:flex;flex-direction:column;gap:5px;"></div>
+          <div style="font-size:11px;color:var(--text3);margin-top:8px;">※ 직업은 배경/직업명 탭에서 추가하고, 효과는 직업효과 탭에서 연결하세요.</div>
         </div>
       </div>
     </div>
@@ -617,8 +625,12 @@ const icons = ['⚔️','🔥','💀','🌑','🌊','⚡','🐉','💎'];
 const DEFAULT = {
   raidNames:[],
   raidDiffs:{},
-  // jobs: { bgs:[], names:[], effects:[], combos:[{bg,name,effects:[]}] }
-  jobs:{ bgs:[], names:[], effects:[], combos:[] },
+  // jobs: {
+  //   bgs: ['아르데타인','실린'],
+  //   jobsByBg: { '아르데타인': ['데헌','건슬'], '실린': ['서머너'] },
+  //   effectsByJob: { '데헌': ['피증'], '서머너': ['방깎','피증'] }
+  // }
+  jobs:{ bgs:[], jobsByBg:{}, effectsByJob:{} },
   maxDealer:4, maxSupport:2,
   colors:{ raidNames:{}, diffs:{}, raidDiffs:{} }
 };
@@ -730,9 +742,9 @@ function startListeners(){
     if(v) cfg={
       raidNames: v.raidNames||DEFAULT.raidNames,
       raidDiffs: v.raidDiffs||DEFAULT.raidDiffs,
-      jobs: v.jobs && !Array.isArray(v.jobs) && v.jobs.bgs !== undefined
+      jobs: (v.jobs && v.jobs.bgs!==undefined && !Array.isArray(v.jobs) && v.jobs.jobsByBg!==undefined)
         ? v.jobs
-        : { bgs:[], names:[], effects:[], combos:[] },
+        : { bgs:[], jobsByBg:{}, effectsByJob:{} },
       maxDealer: v.maxDealer??DEFAULT.maxDealer,
       maxSupport:v.maxSupport??DEFAULT.maxSupport,
       colors:{
@@ -1027,10 +1039,12 @@ function cardHTML(id, r){
     if(entry){
       const nick=typeof entry==='object'?entry.nick:entry;
       const job=typeof entry==='object'?entry.job:'';
+      const bg=typeof entry==='object'?entry.bg:'';
       const effects=typeof entry==='object'&&entry.effects?.length?entry.effects:[];
-      const effectStr=effects.length?`(${effects.join('/')})` : '';
-      const label=job
-        ? `<span style="color:#fff;font-weight:700;">${nick}</span><span style="color:#fff;font-weight:700;">[${job}]</span>${effectStr?`<span style="color:var(--text2);font-size:10px;">${effectStr}</span>`:''}`
+      const effectStr=effects.length?`(${effects.join(',')})` : '';
+      const jobLabel=job?(bg?`${bg}/${job}`:job):'';
+      const label=jobLabel
+        ? `<span style="color:#fff;font-weight:700;">${nick}</span><span style="color:#fff;font-weight:700;">[${jobLabel}]</span>${effectStr?`<span style="color:var(--text2);font-size:10px;">${effectStr}</span>`:''}`
         : `<span style="color:#fff;font-weight:700;">${nick}</span>`;
       return `<div class="member-tag${nick===myNick?' me':''}"><span class="role-dot dealer"></span>${label}</div>`;
     }
@@ -1041,10 +1055,12 @@ function cardHTML(id, r){
     if(entry){
       const nick=typeof entry==='object'?entry.nick:entry;
       const job=typeof entry==='object'?entry.job:'';
+      const bg=typeof entry==='object'?entry.bg:'';
       const effects=typeof entry==='object'&&entry.effects?.length?entry.effects:[];
-      const effectStr=effects.length?`(${effects.join('/')})` : '';
-      const label=job
-        ? `<span style="color:#fff;font-weight:700;">${nick}</span><span style="color:#fff;font-weight:700;">[${job}]</span>${effectStr?`<span style="color:var(--text2);font-size:10px;">${effectStr}</span>`:''}`
+      const effectStr=effects.length?`(${effects.join(',')})` : '';
+      const jobLabel=job?(bg?`${bg}/${job}`:job):'';
+      const label=jobLabel
+        ? `<span style="color:#fff;font-weight:700;">${nick}</span><span style="color:#fff;font-weight:700;">[${jobLabel}]</span>${effectStr?`<span style="color:var(--text2);font-size:10px;">${effectStr}</span>`:''}`
         : `<span style="color:#fff;font-weight:700;">${nick}</span>`;
       return `<div class="member-tag${nick===myNick?' me':''}"><span class="role-dot support"></span>${label}</div>`;
     }
@@ -1139,26 +1155,35 @@ window._openJobModal = (id, role) => {
   const myNick=currentUser.displayName;
   if(dl.includes(myNick)||sp.includes(myNick)){ showToast('이미 참여 중입니다','error'); return; }
   _jobPending={id,role};
-  const combos=(cfg.jobs?.combos)||[];
-  const hasCombos=combos.length>0;
+  // 직업이 하나라도 있는지 확인
+  const bgs=cfg.jobs?.bgs||[];
+  const hasJobs=bgs.some(bg=>(cfg.jobs?.jobsByBg?.[bg]||[]).length>0);
   document.getElementById('job-modal-title').textContent=role==='dealer'?'⚔️ 딜러 직업 선택':'🛡 서폿 직업 선택';
-  document.getElementById('job-no-list').style.display=hasCombos?'none':'block';
-  document.getElementById('job-form').style.display=hasCombos?'block':'none';
-  document.getElementById('job-confirm-btn').disabled=!hasCombos;
-  if(hasCombos){
-    // jm-job: "배경 / 직업명" 형태로 표시, value = combo index
+  document.getElementById('job-no-list').style.display=hasJobs?'none':'block';
+  document.getElementById('job-form').style.display=hasJobs?'block':'none';
+  document.getElementById('job-confirm-btn').disabled=!hasJobs;
+  if(hasJobs){
+    // jm-job: bg/직업명 형태로 모든 직업 나열
     const sel=document.getElementById('jm-job');
-    sel.innerHTML=combos.map((c,i)=>`<option value="${i}">${c.name}${c.effects?.length?` (${c.effects.join('/')})`:''}</option>`).join('');
+    const opts=[];
+    bgs.forEach(bg=>{
+      const jobs=cfg.jobs?.jobsByBg?.[bg]||[];
+      jobs.forEach(j=>opts.push({bg,job:j,label:`${j}`}));
+    });
+    sel.innerHTML=opts.map((o,i)=>`<option value="${i}">${o.label}</option>`).join('');
     jmUpdateEffects();
   }
   document.getElementById('job-modal').classList.add('open');
 };
-window.jmUpdateJobs=()=>{ jmUpdateEffects(); }; // legacy stub
+window.jmUpdateJobs=()=>{ jmUpdateEffects(); };
 window.jmUpdateEffects=()=>{
-  const combos=cfg.jobs?.combos||[];
+  // idx 기반으로 직업 찾기
+  const bgs=cfg.jobs?.bgs||[];
+  const opts=[];
+  bgs.forEach(bg=>{ (cfg.jobs?.jobsByBg?.[bg]||[]).forEach(j=>opts.push({bg,job:j})); });
   const idx=parseInt(document.getElementById('jm-job')?.value||'0');
-  const combo=combos[idx];
-  const effects=combo?.effects||[];
+  const sel=opts[idx];
+  const effects=sel?(cfg.jobs?.effectsByJob?.[sel.job]||[]):[];
   const cont=document.getElementById('jm-effects');
   const grp=document.getElementById('jm-effect-group');
   grp.style.display=effects.length?'block':'none';
@@ -1169,11 +1194,14 @@ document.getElementById('job-modal').addEventListener('click',e=>{ if(e.target==
 window.confirmJob=async()=>{
   if(!_jobPending) return;
   const {id,role}=_jobPending;
-  const idx=parseInt(document.getElementById('jm-job')?.value||'0');
-  const combo=(cfg.jobs?.combos||[])[idx];
-  const bg=combo?.bg||'';
-  const job=combo?.name||'';
-  const effects=combo?.effects||[];
+  const bgs2=cfg.jobs?.bgs||[];
+  const opts2=[];
+  bgs2.forEach(bg2=>{ (cfg.jobs?.jobsByBg?.[bg2]||[]).forEach(j=>opts2.push({bg:bg2,job:j})); });
+  const idx2=parseInt(document.getElementById('jm-job')?.value||'0');
+  const sel2=opts2[idx2];
+  const bg=sel2?.bg||'';
+  const job=sel2?.job||'';
+  const effects=job?(cfg.jobs?.effectsByJob?.[job]||[]):[];
   const myNick=currentUser.displayName;
   const r=raidsData[id]; if(!r) return;
   const dl=getD(r), sp=getS(r);
@@ -1317,8 +1345,8 @@ window.openSettings=()=>{
   cfgDraft=JSON.parse(JSON.stringify(cfg));
   if(!cfgDraft.colors) cfgDraft.colors={raidNames:{},diffs:{},raidDiffs:{}};
   if(!cfgDraft.raidDiffs) cfgDraft.raidDiffs={};
-  if(!cfgDraft.jobs||Array.isArray(cfgDraft.jobs)||cfgDraft.jobs.bgs===undefined){
-    cfgDraft.jobs={ bgs:[], names:[], effects:[], combos:[] };
+  if(!cfgDraft.jobs||Array.isArray(cfgDraft.jobs)||cfgDraft.jobs.jobsByBg===undefined){
+    cfgDraft.jobs={ bgs:[], jobsByBg:{}, effectsByJob:{} };
   }
   document.getElementById('dealer-val').textContent=cfgDraft.maxDealer;
   document.getElementById('support-val').textContent=cfgDraft.maxSupport;
@@ -1345,12 +1373,14 @@ window.stDelJob=()=>{}; window.stAddJob=()=>{}; window.stEditJob=()=>{};
 function getJobBg(){  return document.getElementById('job-bg-select')?.value||''; }
 function getJobJob(){ return document.getElementById('job-job-select')?.value||''; }
 
-// ── 직업 설정 JS (새 구조: bgs/names/effects/combos) ──
-function getJobsArr(k){ return cfgDraft.jobs?.[k]||[]; }
+// ── 직업 설정 JS (배경>직업명 연결, 직업명>효과 연결) ──
+function getJ(k){ return cfgDraft.jobs?.[k]; }
 
 function renderAllJobTabs(){
-  renderJobBgTags(); renderJobNameTags(); renderEffectTagsNew();
-  renderComboTags(); populateComboBgSel();
+  renderJobBgTags();
+  populateJobNameBgSel(); renderJobNamesByBg();
+  populateEffBgSel(); renderEffectJobSel(); renderEffectTagsByJob();
+  renderComboTags();
 }
 window.renderJobBgList=()=>renderAllJobTabs();
 window.renderJobList=()=>renderAllJobTabs();
@@ -1360,122 +1390,167 @@ window.switchJobStab=(tab,el)=>{
   document.querySelectorAll('.job-stab').forEach(b=>{ b.style.background='transparent'; b.style.color='var(--text2)'; });
   el.style.background='var(--accent)'; el.style.color='#fff';
   document.querySelectorAll('.job-stab-panel').forEach(p=>p.style.display='none');
-  // bgnames는 bgs/names 합친 패널
-  const panelId = tab==='bgs'||tab==='names' ? 'job-panel-bgnames' : 'job-panel-'+tab;
+  const panelId='job-panel-'+tab;
   const panel=document.getElementById(panelId);
   if(panel) panel.style.display='block';
-  if(tab==='combos') populateComboBgSel();
+  if(tab==='names') populateJobNameBgSel();
+  if(tab==='effects'){ populateEffBgSel(); renderEffectJobSel(); renderEffectTagsByJob(); }
+  if(tab==='combos') renderComboTags();
 };
 
-function tagItemHTMLNew(val, idx, listKey){
+function editableTagItem(val, blurFn, delFn){
   return `<div class="tag-item">
     <input class="tag-edit-input" value="${val.replace(/"/g,'&quot;')}"
-      onblur="stEditListItem('${listKey}',${idx},this.value)"
-      onkeydown="if(event.key==='Enter')this.blur()"
+      onblur="${blurFn}" onkeydown="if(event.key==='Enter')this.blur()"
       style="flex:1;background:transparent;border:none;color:var(--text);font-size:13px;font-family:'Noto Sans KR',sans-serif;outline:none;min-width:0;">
-    <button class="tag-del" onclick="stDelListItem('${listKey}',${idx})">✕</button>
+    <button class="tag-del" onclick="${delFn}">✕</button>
   </div>`;
 }
+
+// ── 직업배경 ──
 function renderJobBgTags(){
   const el=document.getElementById('st-bg-tags'); if(!el) return;
-  const arr=getJobsArr('bgs');
-  el.innerHTML=arr.length?arr.map((v,i)=>tagItemHTMLNew(v,i,'bgs')).join('')
+  const bgs=(getJ('bgs')||[]);
+  el.innerHTML=bgs.length?bgs.map((v,i)=>editableTagItem(v,`stEditBgItem(${i},this.value)`,`stDelBgItem(${i})`)).join('')
     :'<span style="color:var(--text3);font-size:12px;">배경 없음</span>';
   el.scrollTop=el.scrollHeight;
 }
-function renderJobNameTags(){
-  const el=document.getElementById('st-jobname-tags'); if(!el) return;
-  const arr=getJobsArr('names');
-  el.innerHTML=arr.length?arr.map((v,i)=>tagItemHTMLNew(v,i,'names')).join('')
-    :'<span style="color:var(--text3);font-size:12px;">직업명 없음</span>';
-  el.scrollTop=el.scrollHeight;
-}
-function renderEffectTagsNew(){
-  const el=document.getElementById('st-effect-tags'); if(!el) return;
-  const arr=getJobsArr('effects');
-  el.innerHTML=arr.length?arr.map((v,i)=>tagItemHTMLNew(v,i,'effects')).join('')
-    :'<span style="color:var(--text3);font-size:12px;">효과 없음</span>';
-  el.scrollTop=el.scrollHeight;
-}
-function renderComboTags(){
-  const el=document.getElementById('st-combo-tags'); if(!el) return;
-  const combos=getJobsArr('combos');
-  if(!combos.length){ el.innerHTML='<span style="color:var(--text3);font-size:12px;">직업 없음</span>'; return; }
-  el.innerHTML=combos.map((c,i)=>{
-    const bgs=getJobsArr('bgs'); const names=getJobsArr('names'); const effs=getJobsArr('effects');
-    const bgOpts=bgs.map(b=>`<option value="${b}"${b===c.bg?'selected':''}>${b}</option>`).join('');
-    const nameOpts=names.map(n=>`<option value="${n}"${n===c.name?'selected':''}>${n}</option>`).join('');
-    const effOpts=['(없음)',...effs].map(e=>`<option value="${e}"${c.effects?.[0]===e?'selected':''}>${e}</option>`).join('');
-    return `<div style="display:flex;align-items:center;gap:5px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:7px 10px;flex-wrap:wrap;">
-      <select onchange="stEditCombo(${i},'bg',this.value)" style="flex:1;min-width:70px;background:var(--surface);border:1px solid var(--border);border-radius:5px;padding:4px 6px;color:var(--text);font-size:11px;font-family:'Noto Sans KR',sans-serif;outline:none;">${bgOpts||`<option>${c.bg}</option>`}</select>
-      <select onchange="stEditCombo(${i},'name',this.value)" style="flex:1;min-width:70px;background:var(--surface);border:1px solid var(--border);border-radius:5px;padding:4px 6px;color:var(--text);font-size:11px;font-family:'Noto Sans KR',sans-serif;outline:none;">${nameOpts||`<option>${c.name}</option>`}</select>
-      <select onchange="stEditCombo(${i},'effect',this.value)" style="flex:1;min-width:70px;background:var(--surface);border:1px solid var(--border);border-radius:5px;padding:4px 6px;color:var(--text);font-size:11px;font-family:'Noto Sans KR',sans-serif;outline:none;">${effOpts}</select>
-      <button class="tag-del" onclick="stDelCombo(${i})">✕</button>
-    </div>`;
-  }).join('');
-  el.scrollTop=el.scrollHeight;
-}
-window.stEditCombo=(i,field,val)=>{
-  const c=cfgDraft.jobs.combos[i]; if(!c) return;
-  if(field==='bg') c.bg=val;
-  else if(field==='name') c.name=val;
-  else if(field==='effect') c.effects=val==='(없음)'?[]:[val];
-  renderComboTags();
-};
-function populateComboBgSel(){
-  const bgs=getJobsArr('bgs'); const names=getJobsArr('names'); const effs=getJobsArr('effects');
-  const bgSel=document.getElementById('combo-bg-sel');
-  const namSel=document.getElementById('combo-name-sel');
-  const effSel=document.getElementById('combo-effect-sel');
-  if(bgSel)  bgSel.innerHTML=bgs.length?bgs.map(b=>`<option>${b}</option>`).join(''):'<option>배경 없음</option>';
-  if(namSel) namSel.innerHTML=names.length?names.map(n=>`<option>${n}</option>`).join(''):'<option>직업 없음</option>';
-  if(effSel) effSel.innerHTML=['(없음)',...effs].map(e=>`<option>${e}</option>`).join('');
-}
-
-window.stEditListItem=(listKey,i,val)=>{
-  val=val.trim(); if(!val) return;
-  if(!cfgDraft.jobs[listKey]) return;
-  cfgDraft.jobs[listKey][i]=val;
-  renderAllJobTabs();
-};
-window.stDelListItem=(listKey,i)=>{
-  if(!cfgDraft.jobs[listKey]) return;
-  cfgDraft.jobs[listKey].splice(i,1);
-  renderAllJobTabs();
-};
 window.stAddBg=()=>{
   const inp=document.getElementById('st-bg-input'),v=inp.value.trim(); if(!v) return;
   if(!cfgDraft.jobs.bgs) cfgDraft.jobs.bgs=[];
   if(cfgDraft.jobs.bgs.includes(v)){showToast('이미 있는 배경입니다','error');return;}
   cfgDraft.jobs.bgs.push(v); inp.value=''; renderAllJobTabs();
 };
+window.stEditBgItem=(i,val)=>{
+  val=val.trim(); if(!val) return;
+  const old=cfgDraft.jobs.bgs[i];
+  cfgDraft.jobs.bgs[i]=val;
+  // jobsByBg 키 이름도 변경
+  if(old!==val && cfgDraft.jobs.jobsByBg?.[old]!==undefined){
+    cfgDraft.jobs.jobsByBg[val]=cfgDraft.jobs.jobsByBg[old];
+    delete cfgDraft.jobs.jobsByBg[old];
+  }
+  renderAllJobTabs();
+};
+window.stDelBgItem=(i)=>{
+  const bg=cfgDraft.jobs.bgs[i];
+  cfgDraft.jobs.bgs.splice(i,1);
+  if(cfgDraft.jobs.jobsByBg?.[bg]) delete cfgDraft.jobs.jobsByBg[bg];
+  renderAllJobTabs();
+};
+
+// ── 직업명 (배경 선택 후) ──
+function populateJobNameBgSel(){
+  const sel=document.getElementById('st-jobname-bg-sel'); if(!sel) return;
+  const bgs=cfgDraft.jobs.bgs||[];
+  sel.innerHTML=bgs.length?bgs.map(b=>`<option value="${b}">${b}</option>`).join(''):'<option value="">배경 없음</option>';
+}
+window.renderJobNamesByBg=()=>{
+  const el=document.getElementById('st-jobname-tags'); if(!el) return;
+  const bg=document.getElementById('st-jobname-bg-sel')?.value||'';
+  if(!bg){ el.innerHTML='<span style="color:var(--text3);font-size:12px;">배경을 먼저 선택하세요</span>'; return; }
+  const jobs=(cfgDraft.jobs.jobsByBg?.[bg])||[];
+  el.innerHTML=jobs.length?jobs.map((v,i)=>editableTagItem(v,`stEditJobNameItem('${bg.replace(/'/g,"\\'")}',${i},this.value)`,`stDelJobNameItem('${bg.replace(/'/g,"\\'")}',${i})`)).join('')
+    :'<span style="color:var(--text3);font-size:12px;">직업명 없음</span>';
+  el.scrollTop=el.scrollHeight;
+};
 window.stAddJobName=()=>{
+  const bg=document.getElementById('st-jobname-bg-sel')?.value||'';
+  if(!bg){showToast('배경을 먼저 선택하세요','error');return;}
   const inp=document.getElementById('st-jobname-input'),v=inp.value.trim(); if(!v) return;
-  if(!cfgDraft.jobs.names) cfgDraft.jobs.names=[];
-  if(cfgDraft.jobs.names.includes(v)){showToast('이미 있는 직업명입니다','error');return;}
-  cfgDraft.jobs.names.push(v); inp.value=''; renderAllJobTabs();
+  if(!cfgDraft.jobs.jobsByBg) cfgDraft.jobs.jobsByBg={};
+  if(!cfgDraft.jobs.jobsByBg[bg]) cfgDraft.jobs.jobsByBg[bg]=[];
+  if(cfgDraft.jobs.jobsByBg[bg].includes(v)){showToast('이미 있는 직업명입니다','error');return;}
+  cfgDraft.jobs.jobsByBg[bg].push(v); inp.value=''; renderJobNamesByBg();
+};
+window.stEditJobNameItem=(bg,i,val)=>{
+  val=val.trim(); if(!val) return;
+  const old=cfgDraft.jobs.jobsByBg[bg][i];
+  cfgDraft.jobs.jobsByBg[bg][i]=val;
+  // effectsByJob 키 이름도 변경
+  if(old!==val && cfgDraft.jobs.effectsByJob?.[old]!==undefined){
+    cfgDraft.jobs.effectsByJob[val]=cfgDraft.jobs.effectsByJob[old];
+    delete cfgDraft.jobs.effectsByJob[old];
+  }
+  renderJobNamesByBg();
+};
+window.stDelJobNameItem=(bg,i)=>{
+  const job=cfgDraft.jobs.jobsByBg[bg][i];
+  cfgDraft.jobs.jobsByBg[bg].splice(i,1);
+  if(cfgDraft.jobs.effectsByJob?.[job]) delete cfgDraft.jobs.effectsByJob[job];
+  renderJobNamesByBg();
+};
+
+// ── 직업효과 (배경+직업 선택 후, 최대 2개) ──
+function populateEffBgSel(){
+  const sel=document.getElementById('st-eff-bg-sel'); if(!sel) return;
+  const bgs=cfgDraft.jobs.bgs||[];
+  sel.innerHTML=bgs.length?bgs.map(b=>`<option value="${b}">${b}</option>`).join(''):'<option value="">배경 없음</option>';
+}
+window.renderEffectJobSel=()=>{
+  const bg=document.getElementById('st-eff-bg-sel')?.value||'';
+  const sel=document.getElementById('st-eff-job-sel'); if(!sel) return;
+  const jobs=(cfgDraft.jobs.jobsByBg?.[bg])||[];
+  sel.innerHTML=jobs.length?jobs.map(j=>`<option value="${j}">${j}</option>`).join(''):'<option value="">직업 없음</option>';
+  renderEffectTagsByJob();
+};
+window.renderEffectTagsByJob=()=>{
+  const el=document.getElementById('st-effect-tags'); if(!el) return;
+  const job=document.getElementById('st-eff-job-sel')?.value||'';
+  if(!job){ el.innerHTML='<span style="color:var(--text3);font-size:12px;">직업을 먼저 선택하세요</span>'; return; }
+  const effects=(cfgDraft.jobs.effectsByJob?.[job])||[];
+  el.innerHTML=effects.length?effects.map((v,i)=>editableTagItem(v,`stEditEffectItem('${job.replace(/'/g,"\\'")}',${i},this.value)`,`stDelEffectItem('${job.replace(/'/g,"\\'")}',${i})`)).join('')
+    :'<span style="color:var(--text3);font-size:12px;">효과 없음</span>';
+  el.scrollTop=el.scrollHeight;
 };
 window.stAddEffect=()=>{
+  const job=document.getElementById('st-eff-job-sel')?.value||'';
+  if(!job){showToast('직업을 먼저 선택하세요','error');return;}
   const inp=document.getElementById('st-effect-input'),v=inp.value.trim(); if(!v) return;
-  if(!cfgDraft.jobs.effects) cfgDraft.jobs.effects=[];
-  if(cfgDraft.jobs.effects.includes(v)){showToast('이미 있는 효과입니다','error');return;}
-  cfgDraft.jobs.effects.push(v); inp.value=''; renderAllJobTabs();
+  if(!cfgDraft.jobs.effectsByJob) cfgDraft.jobs.effectsByJob={};
+  if(!cfgDraft.jobs.effectsByJob[job]) cfgDraft.jobs.effectsByJob[job]=[];
+  if(cfgDraft.jobs.effectsByJob[job].length>=2){showToast('효과는 최대 2개까지 가능합니다','error');return;}
+  if(cfgDraft.jobs.effectsByJob[job].includes(v)){showToast('이미 있는 효과입니다','error');return;}
+  cfgDraft.jobs.effectsByJob[job].push(v); inp.value=''; renderEffectTagsByJob();
 };
-window.stAddCombo=()=>{
-  const bg=document.getElementById('combo-bg-sel')?.value||'';
-  const name=document.getElementById('combo-name-sel')?.value||'';
-  const eff=document.getElementById('combo-effect-sel')?.value||'';
-  if(!bg||bg==='배경 없음'||!name||name==='직업 없음'){showToast('배경과 직업명을 선택하세요','error');return;}
-  if(!cfgDraft.jobs.combos) cfgDraft.jobs.combos=[];
-  const effects=eff&&eff!=='(없음)'?[eff]:[];
-  const dupe=cfgDraft.jobs.combos.find(c=>c.bg===bg&&c.name===name&&JSON.stringify(c.effects)===JSON.stringify(effects));
-  if(dupe){showToast('이미 있는 직업 조합입니다','error');return;}
-  cfgDraft.jobs.combos.push({bg,name,effects}); renderAllJobTabs();
+window.stEditEffectItem=(job,i,val)=>{
+  val=val.trim(); if(!val) return;
+  if(cfgDraft.jobs.effectsByJob?.[job]) cfgDraft.jobs.effectsByJob[job][i]=val;
+  renderEffectTagsByJob();
 };
-window.stDelCombo=(i)=>{ cfgDraft.jobs.combos.splice(i,1); renderAllJobTabs(); };
+window.stDelEffectItem=(job,i)=>{
+  if(cfgDraft.jobs.effectsByJob?.[job]) cfgDraft.jobs.effectsByJob[job].splice(i,1);
+  renderEffectTagsByJob();
+};
+
+// ── 직업 조합 목록 (자동 생성: bg > jobsByBg > effectsByJob) ──
+function renderComboTags(){
+  const el=document.getElementById('st-combo-tags'); if(!el) return;
+  const bgs=cfgDraft.jobs.bgs||[];
+  const rows=[];
+  bgs.forEach(bg=>{
+    const jobs=(cfgDraft.jobs.jobsByBg?.[bg])||[];
+    jobs.forEach(job=>{
+      const effects=(cfgDraft.jobs.effectsByJob?.[job])||[];
+      rows.push({bg,job,effects});
+    });
+  });
+  if(!rows.length){ el.innerHTML='<span style="color:var(--text3);font-size:12px;">직업 없음 — 배경/직업명 탭에서 추가하세요</span>'; return; }
+  el.innerHTML=rows.map(r=>{
+    const effStr=r.effects.length?`(${r.effects.join(',')})` :'';
+    return `<div style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:8px 12px;font-size:12px;color:var(--text);">
+      ${r.bg} / <b>${r.job}</b>${effStr?` <span style="color:var(--text2);">${effStr}</span>`:''}
+    </div>`;
+  }).join('');
+  el.scrollTop=el.scrollHeight;
+}
+
 // legacy stubs
-window.stDelBg=()=>{}; window.stEditBg=()=>{}; window.stAddJobItem=()=>{};
-window.stDelJobItem=()=>{}; window.stEditJobItem=()=>{}; window.stDelEffect=()=>{}; window.stEditEffect=()=>{};
+window.stAddJobItem=()=>{}; window.stDelJobItem=()=>{}; window.stEditJobItem=()=>{};
+window.stAddCombo=()=>{}; window.stDelCombo=()=>{}; window.stEditCombo=()=>{};
+window.stDelBg=()=>{}; window.stEditBg=()=>{};
+window.stDelListItem=()=>{}; window.stEditListItem=()=>{};
+window.stDelEffect=()=>{}; window.stEditEffect=()=>{};
 
 function renderDraggableList(containerId,items,key){
   const el=document.getElementById(containerId);
