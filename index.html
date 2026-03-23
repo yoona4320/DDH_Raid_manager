@@ -1718,6 +1718,7 @@ window._toggleGameDone=async(id,done)=>{
 
 
 // ── SETTINGS ──
+window.openSettings=()=>{
   cfgDraft=JSON.parse(JSON.stringify(cfg));
   if(!cfgDraft.colors) cfgDraft.colors={raidNames:{},diffs:{},raidDiffs:{}};
   if(!cfgDraft.raidDiffs) cfgDraft.raidDiffs={};
