@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>레이드 현황</title>
+<title>레이드 현황 1203</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎮</text></svg>">
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;900&family=Rajdhani:wght@600;700&display=swap" rel="stylesheet">
 <style>
@@ -415,6 +415,25 @@ body{font-family:'Noto Sans KR',sans-serif;background:var(--bg);color:var(--text
   </div>
 </div>
 
+<!-- JOB SELECT MODAL -->
+<div class="modal-overlay" id="job-modal">
+  <div class="modal" style="max-width:360px;">
+    <div class="modal-title" id="job-modal-title">⚔️ 직업 선택</div>
+    <div class="form-group">
+      <label>참여 직업을 선택해주세요</label>
+      <select id="job-select" style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:9px 12px;color:var(--text);font-size:14px;font-family:'Noto Sans KR',sans-serif;outline:none;">
+      </select>
+    </div>
+    <div id="job-no-list" style="display:none;font-size:13px;color:var(--text3);padding:8px 0;">
+      설정된 직업이 없습니다. 설정 → 직업 탭에서 추가해주세요.
+    </div>
+    <div class="modal-actions">
+      <button class="btn-mcancel" onclick="closeJobModal()">취소</button>
+      <button class="btn-confirm" id="job-confirm-btn" onclick="confirmJob()">신청</button>
+    </div>
+  </div>
+</div>
+
 <!-- SETTINGS MODAL -->
 <div class="modal-overlay" id="settings-modal">
   <div class="modal settings-modal">
@@ -422,6 +441,7 @@ body{font-family:'Noto Sans KR',sans-serif;background:var(--bg);color:var(--text
     <div class="stabs">
       <button class="stab active" onclick="switchStab('raids',this)">레이드 이름</button>
       <button class="stab" onclick="switchStab('diffs',this)">난이도</button>
+      <button class="stab" onclick="switchStab('jobs',this)">직업</button>
       <button class="stab" onclick="switchStab('counts',this)">인원 수</button>
       <button class="stab" onclick="switchStab('colors',this)">글자색</button>
     </div>
@@ -446,6 +466,24 @@ body{font-family:'Noto Sans KR',sans-serif;background:var(--bg);color:var(--text
         <div class="tag-add-row">
           <input type="text" id="st-diff-input" placeholder="새 난이도 (예: 헬)" maxlength="10" onkeydown="if(event.key==='Enter')stAddDiff()">
           <button class="btn-add-tag" onclick="stAddDiff()">＋ 추가</button>
+        </div>
+      </div>
+    </div>
+    <div class="stab-panel" id="stab-jobs">
+      <div class="s-section">
+        <div class="s-section-title">딜러 직업 목록</div>
+        <div class="tag-list" id="st-dealer-job-tags"></div>
+        <div class="tag-add-row">
+          <input type="text" id="st-dealer-job-input" placeholder="딜러 직업 추가 (예: 워로드)" maxlength="15" onkeydown="if(event.key==='Enter')stAddJob('dealer')">
+          <button class="btn-add-tag" onclick="stAddJob('dealer')">＋ 추가</button>
+        </div>
+      </div>
+      <div class="s-section" style="margin-top:16px;">
+        <div class="s-section-title">서폿 직업 목록</div>
+        <div class="tag-list" id="st-support-job-tags"></div>
+        <div class="tag-add-row">
+          <input type="text" id="st-support-job-input" placeholder="서폿 직업 추가 (예: 홀리나이트)" maxlength="15" onkeydown="if(event.key==='Enter')stAddJob('support')">
+          <button class="btn-add-tag" onclick="stAddJob('support')">＋ 추가</button>
         </div>
       </div>
     </div>
@@ -524,6 +562,7 @@ const icons = ['⚔️','🔥','💀','🌑','🌊','⚡','🐉','💎'];
 const DEFAULT = {
   raidNames:[],
   raidDiffs:{},
+  jobs:{ dealer:[], support:[] },
   maxDealer:4, maxSupport:2,
   colors:{ raidNames:{}, diffs:{}, raidDiffs:{} }
 };
@@ -546,8 +585,8 @@ function formatTime(t){
   const hour = h === 0 ? 12 : h > 12 ? h - 12 : h;
   return `${ampm} ${hour}:${String(m).padStart(2,'0')}`;
 }
-const getD  = r => r.dealers  ? Object.values(r.dealers)  : [];
-const getS  = r => r.supports ? Object.values(r.supports) : [];
+const getD  = r => r.dealers  ? Object.values(r.dealers).map(e=>typeof e==='object'?e.nick:e)  : [];
+const getS  = r => r.supports ? Object.values(r.supports).map(e=>typeof e==='object'?e.nick:e) : [];
 const isFull  = r => getD(r).length >= r.maxDealer && getS(r).length >= r.maxSupport;
 const isDone  = r => !!r.done;
 const isClosed= r => !!r.closed; // 수동 마감
@@ -635,6 +674,7 @@ function startListeners(){
     if(v) cfg={
       raidNames: v.raidNames||DEFAULT.raidNames,
       raidDiffs: v.raidDiffs||DEFAULT.raidDiffs,
+      jobs:      { dealer:(v.jobs&&v.jobs.dealer)||[], support:(v.jobs&&v.jobs.support)||[] },
       maxDealer: v.maxDealer??DEFAULT.maxDealer,
       maxSupport:v.maxSupport??DEFAULT.maxSupport,
       colors:{
@@ -857,12 +897,24 @@ function cardHTML(id, r){
   const isMeIn=dl.includes(myNick)||sp.includes(myNick);
   const li=isLoggedIn(), admin=isAdmin();
 
-  const dSlots=[...Array(r.maxDealer)].map((_,i)=>dl[i]
-    ?`<div class="member-tag${dl[i]===myNick?' me':''}"><span class="role-dot dealer"></span>${dl[i]}</div>`
-    :`<div class="slot-empty">— 빈자리</div>`).join('');
-  const sSlots=[...Array(r.maxSupport)].map((_,i)=>sp[i]
-    ?`<div class="member-tag${sp[i]===myNick?' me':''}"><span class="role-dot support"></span>${sp[i]}</div>`
-    :`<div class="slot-empty">— 빈자리</div>`).join('');
+  const dSlots=[...Array(r.maxDealer)].map((_,i)=>{
+    const entry=r.dealers?Object.values(r.dealers)[i]:null;
+    if(entry){
+      const nick=typeof entry==='object'?entry.nick:entry;
+      const job=typeof entry==='object'?entry.job:'';
+      return `<div class="member-tag${nick===myNick?' me':''}"><span class="role-dot dealer"></span>${nick}${job?` <span style="font-size:10px;color:var(--text3);">(${job})</span>`:''}</div>`;
+    }
+    return `<div class="slot-empty">— 빈자리</div>`;
+  }).join('');
+  const sSlots=[...Array(r.maxSupport)].map((_,i)=>{
+    const entry=r.supports?Object.values(r.supports)[i]:null;
+    if(entry){
+      const nick=typeof entry==='object'?entry.nick:entry;
+      const job=typeof entry==='object'?entry.job:'';
+      return `<div class="member-tag${nick===myNick?' me':''}"><span class="role-dot support"></span>${nick}${job?` <span style="font-size:10px;color:var(--text3);">(${job})</span>`:''}</div>`;
+    }
+    return `<div class="slot-empty">— 빈자리</div>`;
+  }).join('');
 
   const prog=done?'done-fill':pct>=100?'done-fill':pct>=75?'danger':'';
   const sc=done?'done':full?'full':'recruiting';
@@ -900,8 +952,8 @@ function cardHTML(id, r){
       :!li
         ?`<div class="login-required-msg">참여하려면 <a onclick="openAuthModal()">로그인</a>이 필요합니다</div>`
         :`<div class="card-actions">
-          <button class="action-btn btn-dealer"  ${dl.length>=r.maxDealer||isMeIn?'disabled':''} onclick="window._join('${id}','dealer')">⚔️ 딜러 신청</button>
-          <button class="action-btn btn-support" ${sp.length>=r.maxSupport||isMeIn?'disabled':''} onclick="window._join('${id}','support')">🛡 서폿 신청</button>
+          <button class="action-btn btn-dealer"  ${dl.length>=r.maxDealer||isMeIn?'disabled':''} onclick="window._openJobModal('${id}','dealer')">⚔️ 딜러 신청</button>
+          <button class="action-btn btn-support" ${sp.length>=r.maxSupport||isMeIn?'disabled':''} onclick="window._openJobModal('${id}','support')">🛡 서폿 신청</button>
           <button class="action-btn btn-cancel"  ${!isMeIn?'disabled':''} onclick="window._leave('${id}')">신청 취소</button>
         </div>`;
 
@@ -939,32 +991,61 @@ function cardHTML(id, r){
 }
 
 // ── ACTIONS ──
-window._join = async (id, role) => {
+// ── JOB MODAL ──
+let _jobPending = null; // { id, role }
+window._openJobModal = (id, role) => {
   if(!isLoggedIn()){ openAuthModal(); return; }
+  const r=raidsData[id]; if(!r) return;
+  const dl=getD(r), sp=getS(r);
+  const myNick=currentUser.displayName;
+  if(dl.includes(myNick)||sp.includes(myNick)){ showToast('이미 참여 중입니다','error'); return; }
+  _jobPending={id,role};
+  const jobs=(role==='dealer'?cfg.jobs?.dealer:cfg.jobs?.support)||[];
+  const title=role==='dealer'?'⚔️ 딜러 직업 선택':'🛡 서폿 직업 선택';
+  document.getElementById('job-modal-title').textContent=title;
+  const sel=document.getElementById('job-select');
+  const noList=document.getElementById('job-no-list');
+  const confirmBtn=document.getElementById('job-confirm-btn');
+  if(!jobs.length){
+    sel.style.display='none'; noList.style.display='block'; confirmBtn.disabled=true;
+  } else {
+    sel.style.display='block'; noList.style.display='none'; confirmBtn.disabled=false;
+    sel.innerHTML=jobs.map(j=>`<option value="${j}">${j}</option>`).join('');
+  }
+  document.getElementById('job-modal').classList.add('open');
+};
+window.closeJobModal=()=>{ document.getElementById('job-modal').classList.remove('open'); _jobPending=null; };
+document.getElementById('job-modal').addEventListener('click',e=>{ if(e.target===e.currentTarget) closeJobModal(); });
+window.confirmJob=async()=>{
+  if(!_jobPending) return;
+  const {id,role}=_jobPending;
+  const job=document.getElementById('job-select').value||'';
   const myNick=currentUser.displayName;
   const r=raidsData[id]; if(!r) return;
   const dl=getD(r), sp=getS(r);
-  if(dl.includes(myNick)||sp.includes(myNick)){ showToast('이미 참여 중입니다','error'); return; }
   try{
     if(role==='dealer'){
       if(dl.length>=r.maxDealer){ showToast('딜러 자리가 꽉 찼습니다','error'); return; }
-      await push(ref(db,`raids/${id}/dealers`), myNick);
+      await push(ref(db,`raids/${id}/dealers`),{nick:myNick,job});
       showToast('⚔️ 딜러 신청 완료!','success');
     } else {
       if(sp.length>=r.maxSupport){ showToast('서폿 자리가 꽉 찼습니다','error'); return; }
-      await push(ref(db,`raids/${id}/supports`), myNick);
+      await push(ref(db,`raids/${id}/supports`),{nick:myNick,job});
       showToast('🛡 서폿 신청 완료!','success');
     }
+    closeJobModal();
   } catch(e){ showToast('오류: '+e.message,'error'); }
 };
+
+window._join = async (id, role) => { window._openJobModal(id, role); };
 
 window._leave = async (id) => {
   if(!isLoggedIn()) return;
   const myNick=currentUser.displayName;
   const r=raidsData[id]; if(!r) return;
   try{
-    if(r.dealers)  for(const [k,v] of Object.entries(r.dealers))  if(v===myNick) await remove(ref(db,`raids/${id}/dealers/${k}`));
-    if(r.supports) for(const [k,v] of Object.entries(r.supports)) if(v===myNick) await remove(ref(db,`raids/${id}/supports/${k}`));
+    if(r.dealers)  for(const [k,v] of Object.entries(r.dealers))  { const nick=typeof v==='object'?v.nick:v; if(nick===myNick) await remove(ref(db,`raids/${id}/dealers/${k}`)); }
+    if(r.supports) for(const [k,v] of Object.entries(r.supports)) { const nick=typeof v==='object'?v.nick:v; if(nick===myNick) await remove(ref(db,`raids/${id}/supports/${k}`)); }
     showToast('신청이 취소되었습니다');
   } catch(e){ showToast('오류: '+e.message,'error'); }
 };
@@ -1079,11 +1160,13 @@ window.submitRaid=async()=>{
 // ── SETTINGS ──
 window.openSettings=()=>{
   cfgDraft=JSON.parse(JSON.stringify(cfg));
-  if(!cfgDraft.colors) cfgDraft.colors={raidNames:{},diffs:{}};
+  if(!cfgDraft.colors) cfgDraft.colors={raidNames:{},diffs:{},raidDiffs:{}};
   if(!cfgDraft.raidDiffs) cfgDraft.raidDiffs={};
+  if(!cfgDraft.jobs) cfgDraft.jobs={dealer:[],support:[]};
   document.getElementById('dealer-val').textContent=cfgDraft.maxDealer;
   document.getElementById('support-val').textContent=cfgDraft.maxSupport;
   renderStTags();
+  renderJobTags();
   renderDiffRaidSelect();
   renderColorPickers();
   document.getElementById('settings-modal').classList.add('open');
@@ -1097,8 +1180,30 @@ window.switchStab=(tab,el)=>{
 };
 function renderStTags(){
   renderDraggableList('st-raid-tags',cfgDraft.raidNames,'raidNames');
-  renderDraggableList('st-diff-tags',cfgDraft.diffs,'diffs');
 }
+function renderJobTags(){
+  renderSimpleTagList('st-dealer-job-tags', cfgDraft.jobs?.dealer||[], 'dealer');
+  renderSimpleTagList('st-support-job-tags', cfgDraft.jobs?.support||[], 'support');
+}
+function renderSimpleTagList(containerId, items, role){
+  const el=document.getElementById(containerId);
+  if(!el) return;
+  if(!items.length){ el.innerHTML='<span style="color:var(--text3);font-size:12px;">직업 없음 — 아래에서 추가하세요</span>'; return; }
+  el.innerHTML=items.map((v,i)=>`
+    <div class="tag-item">
+      <span class="tag-drag">⠿</span>
+      <span class="tag-label">${v}</span>
+      <button class="tag-del" onclick="stDelJob('${role}',${i})">✕</button>
+    </div>`).join('');
+}
+window.stDelJob=(role,i)=>{ cfgDraft.jobs[role].splice(i,1); renderJobTags(); };
+window.stAddJob=(role)=>{
+  const inp=document.getElementById(`st-${role==='dealer'?'dealer':'support'}-job-input`);
+  const v=inp.value.trim(); if(!v) return;
+  if(!cfgDraft.jobs) cfgDraft.jobs={dealer:[],support:[]};
+  if(cfgDraft.jobs[role].includes(v)){showToast('이미 있는 직업입니다','error');return;}
+  cfgDraft.jobs[role].push(v); inp.value=''; renderJobTags();
+};
 function renderDraggableList(containerId,items,key){
   const el=document.getElementById(containerId);
   if(!items||!items.length){ el.innerHTML='<span style="color:var(--text3);font-size:12px;">난이도 없음 — 아래에서 추가하세요</span>'; return; }
@@ -1258,14 +1363,14 @@ window.renderDiffColorForRaid=(raidName)=>{
 window.setItemColor=(colorKey, name, color)=>{
   if(!cfgDraft.colors) cfgDraft.colors={raidNames:{},diffs:{},raidDiffs:{}};
   if(!cfgDraft.colors[colorKey]) cfgDraft.colors[colorKey]={};
-  // 중복 체크: 레이드 이름 색 ↔ 모든 난이도 색 겹침 방지
+  // 해당 레이드 이름색 ↔ 해당 레이드 난이도색만 체크
   if(colorKey==='raidNames'){
-    const allDiffColors=[...new Set(Object.values(cfgDraft.colors.raidDiffs||{}).flatMap(o=>Object.values(o)))];
-    if(allDiffColors.includes(color)){
-      showToast('⚠️ 난이도 색상과 겹칩니다','error'); return;
+    const myDiffColors=Object.values(cfgDraft.colors.raidDiffs?.[name]||{});
+    if(myDiffColors.includes(color)){
+      showToast(`⚠️ ${name}의 난이도 색상과 겹칩니다`,'error'); return;
     }
   }
-  cfgDraft.colors[colorKey][name] = color;
+  cfgDraft.colors[colorKey][name]=color;
   renderColorPickers();
 };
 window.clearItemColor=(colorKey, name)=>{
@@ -1273,10 +1378,10 @@ window.clearItemColor=(colorKey, name)=>{
   renderColorPickers();
 };
 window.setDiffColor=(raidName,diffName,color)=>{
-  // 중복 체크: 레이드 이름 색상과 겹치면 경고
-  const raidColors=Object.values(cfgDraft.colors.raidNames||{});
-  if(raidColors.includes(color)){
-    showToast('⚠️ 레이드 이름 색상과 겹칩니다','error'); return;
+  // 해당 레이드 이름색과만 비교
+  const myRaidColor=cfgDraft.colors.raidNames?.[raidName]||'';
+  if(myRaidColor && myRaidColor===color){
+    showToast(`⚠️ ${raidName} 레이드 이름 색상과 겹칩니다`,'error'); return;
   }
   if(!cfgDraft.colors.raidDiffs) cfgDraft.colors.raidDiffs={};
   if(!cfgDraft.colors.raidDiffs[raidName]) cfgDraft.colors.raidDiffs[raidName]={};
