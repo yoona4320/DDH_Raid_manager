@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>레이드 현황</title>
+<title>도담회</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎮</text></svg>">
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;900&family=Rajdhani:wght@600;700&display=swap" rel="stylesheet">
 <style>
@@ -299,7 +299,7 @@ body{font-family:'Noto Sans KR',sans-serif;background:var(--bg);color:var(--text
 <div class="auth-modal-overlay" id="auth-modal">
   <div class="auth-box">
     <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:4px;">
-      <div class="auth-logo">레이드 현황</div>
+      <div class="auth-logo">도담회 현황</div>
       <button onclick="closeAuthModal()" style="background:none;border:none;color:var(--text3);font-size:20px;cursor:pointer;line-height:1;padding:0;">✕</button>
     </div>
     <div class="auth-sub">레이드 모집 관리 시스템</div>
@@ -330,7 +330,7 @@ body{font-family:'Noto Sans KR',sans-serif;background:var(--bg);color:var(--text
 <!-- APP -->
 <div class="app" id="app">
   <aside class="sidebar" id="sidebar">
-    <div class="sb-logo" onclick="navTo('all')" style="cursor:pointer;">레이드 현황</div>
+    <div class="sb-logo" onclick="navTo('all')" style="cursor:pointer;">도담회 현황</div>
     <nav class="sb-nav">
       <!-- 큰 카테고리 탭 -->
       <div style="display:flex;gap:4px;margin:6px 8px 10px;background:var(--surface2);border-radius:10px;padding:3px;">
@@ -1048,6 +1048,7 @@ window.navTo = (page, raidName, status) => {
     document.querySelectorAll('.sb-game-item').forEach(b=>{ if(b.dataset.type===raidName) b.classList.add('active'); });
     document.getElementById('page-game-detail').classList.add('active');
     markSeen(`game:${raidName}`);
+    rebuildSidebar();
     renderGamePage(raidName);
   } else if(page==='all'){
     document.getElementById('nav-all').classList.add('active');
@@ -1075,6 +1076,7 @@ window.navTo = (page, raidName, status) => {
     if(sub){ sub.classList.add('open'); if(arr) arr.textContent='▾'; }
     document.getElementById('page-raid').classList.add('active');
     markSeen(`raid:${raidName}`);
+    rebuildSidebar();
     renderRaidPage();
   }
   document.getElementById('sidebar').classList.remove('open');
@@ -1644,6 +1646,11 @@ window.submitGame=async()=>{
       await push(ref(db,'games'),{type,date:dateStr,time,maxMembers,
         done:false,closed:false,createdAt:Date.now(),
         createdBy:currentUser?.displayName||'',members:{}});
+      // 새 게임 타입이면 settings.gameNames에도 자동 추가
+      if(!cfg.gameNames.includes(type)){
+        const newGameNames=[...cfg.gameNames, type];
+        await set(ref(db,'settings/gameNames'), newGameNames);
+      }
       showToast('✓ 게임이 생성되었습니다!','success');
     }
     closeCreateGame();
@@ -1834,7 +1841,12 @@ window.switchStab=(tab,el)=>{
   if(el) el.classList.add('active');
   const panel=document.getElementById('stab-'+tab);
   if(panel) panel.classList.add('active');
-  if(tab==='jobs') setTimeout(()=>renderAllJobTabs(),0);
+  if(tab==='jobs'){
+    setTimeout(()=>renderAllJobTabs(),0);
+    // 직업 탭 열 때 모달 상단으로
+    const m=document.querySelector('.settings-modal');
+    if(m) m.scrollTop=0;
+  }
 };
 function renderStTags(){
   renderDraggableList('st-raid-tags',cfgDraft.raidNames,'raidNames');
@@ -1842,7 +1854,13 @@ function renderStTags(){
   if(c) c.textContent=cfgDraft.raidNames.length?`(${cfgDraft.raidNames.length}개)`:'';
 }
 function renderGameNameTags(){
+  const el=document.getElementById('st-game-tags'); if(!el) return;
   renderDraggableList('st-game-tags',cfgDraft.gameNames,'gameNames');
+  // 5개 이상이면 스크롤 (약 35px*5=175px)
+  el.style.maxHeight=cfgDraft.gameNames.length>=5?'175px':'none';
+  el.style.overflowY=cfgDraft.gameNames.length>=5?'auto':'visible';
+  // 추가 후 상단 고정
+  el.scrollTop=0;
   const c=document.getElementById('cnt-games');
   if(c) c.textContent=cfgDraft.gameNames.length?`(${cfgDraft.gameNames.length}개)`:'';
 }
@@ -1850,6 +1868,8 @@ window.stAddGame=()=>{
   const inp=document.getElementById('st-game-input'),v=inp.value.trim(); if(!v) return;
   if(cfgDraft.gameNames.includes(v)){showToast('이미 있는 항목입니다','error');return;}
   cfgDraft.gameNames.push(v); inp.value=''; renderGameNameTags();
+  // 추가 후 모달 상단으로
+  const m=document.querySelector('.settings-modal'); if(m) m.scrollTop=0;
 };
 function renderJobTags(){ /* legacy - no-op */ }
 window.stDelJob=()=>{}; window.stAddJob=()=>{}; window.stEditJob=()=>{};
