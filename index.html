@@ -10,7 +10,7 @@
 :root{
   --bg:#0d0f14;--surface:#161920;--surface2:#1e2230;--border:#2a2f42;
   --accent:#5b6ef5;--accent2:#e8a838;--red:#e85555;--green:#3ecf8e;
-  --dealer:#e85555;--support:#3ecf8e;--text:#e8eaf0;--text2:#8b93a8;--text3:#5a6070;
+  --dealer:#f97316;--support:#38bdf8;--text:#e8eaf0;--text2:#8b93a8;--text3:#5a6070;
   --sidebar:200px;
 }
 *{margin:0;padding:0;box-sizing:border-box;}
@@ -128,9 +128,9 @@ body{font-family:'Noto Sans KR',sans-serif;background:var(--bg);color:var(--text
 .diff-badge[style]{background:transparent!important;}
 /* status badge now sits inline next to diff */
 .card-status{font-size:10px;border-radius:4px;padding:2px 7px;font-weight:700;white-space:nowrap;flex-shrink:0;}
-.card-status.recruiting{background:rgba(91,110,245,.15);color:var(--accent);}
-.card-status.full{background:rgba(232,85,85,.15);color:var(--red);}
-.card-status.done{background:rgba(62,207,142,.12);color:var(--green);}
+.card-status.recruiting{background:rgba(91,110,245,.15);color:var(--accent);border:1px solid rgba(91,110,245,.4);}
+.card-status.full{background:rgba(232,85,85,.15);color:var(--red);border:1px solid rgba(232,85,85,.4);}
+.card-status.done{background:rgba(62,207,142,.12);color:var(--green);border:1px solid rgba(62,207,142,.4);}
 .card-header-right{display:flex;align-items:center;gap:5px;flex-shrink:0;flex-wrap:wrap;justify-content:flex-end;}
 .hdr-btn{border:none;border-radius:6px;padding:4px 8px;font-size:11px;font-weight:700;cursor:pointer;
   font-family:'Noto Sans KR',sans-serif;transition:all .15s;white-space:nowrap;line-height:1.4;}
@@ -143,6 +143,10 @@ body{font-family:'Noto Sans KR',sans-serif;background:var(--bg);color:var(--text
 .hdr-done:not(:disabled):hover{background:rgba(62,207,142,.22);}
 .hdr-undone{background:rgba(232,168,56,.1);color:var(--accent2);border:1px solid rgba(232,168,56,.25);}
 .hdr-undone:not(:disabled):hover{background:rgba(232,168,56,.2);}
+.hdr-close{background:rgba(232,85,85,.1);color:var(--red);border:1px solid rgba(232,85,85,.3);}
+.hdr-close:not(:disabled):hover{background:rgba(232,85,85,.2);}
+.hdr-unclose{background:rgba(232,168,56,.1);color:var(--accent2);border:1px solid rgba(232,168,56,.3);}
+.hdr-unclose:not(:disabled):hover{background:rgba(232,168,56,.2);}
 /* color picker in settings */
 .tag-color-row{display:flex;align-items:center;gap:6px;}
 .tag-color-swatch{width:18px;height:18px;border-radius:4px;border:1px solid var(--border);cursor:pointer;flex-shrink:0;}
@@ -178,12 +182,12 @@ body{font-family:'Noto Sans KR',sans-serif;background:var(--bg);color:var(--text
   border:none;font-family:'Noto Sans KR',sans-serif;transition:background .15s,border-color .15s,color .15s;
   display:flex;align-items:center;justify-content:center;gap:4px;}
 .action-btn:disabled{opacity:.32;cursor:not-allowed;}
-.btn-dealer{background:rgba(232,85,85,.15);color:var(--dealer);border:1px solid rgba(232,85,85,.3);}
-.btn-dealer:not(:disabled):hover{background:rgba(232,85,85,.28);}
-.btn-support{background:rgba(62,207,142,.12);color:var(--support);border:1px solid rgba(62,207,142,.3);}
-.btn-support:not(:disabled):hover{background:rgba(62,207,142,.25);}
-.btn-cancel{background:rgba(232,168,56,.1);color:var(--accent2);border:1px solid rgba(232,168,56,.25);}
-.btn-cancel:not(:disabled):hover{background:rgba(232,168,56,.2);}
+.btn-dealer{background:rgba(249,115,22,.15);color:var(--dealer);border:1px solid rgba(249,115,22,.3);}
+.btn-dealer:not(:disabled):hover{background:rgba(249,115,22,.28);}
+.btn-support{background:rgba(56,189,248,.12);color:var(--support);border:1px solid rgba(56,189,248,.3);}
+.btn-support:not(:disabled):hover{background:rgba(56,189,248,.25);}
+.btn-cancel{background:rgba(232,85,85,.12);color:var(--red);border:1px solid rgba(232,85,85,.3);}
+.btn-cancel:not(:disabled):hover{background:rgba(232,85,85,.22);}
 .login-required-msg{text-align:center;padding:10px 15px 12px;border-top:1px solid var(--border);
   font-size:12px;color:var(--text3);}
 .login-required-msg a{color:var(--accent);cursor:pointer;text-decoration:underline;}
@@ -534,10 +538,52 @@ let editingRaidId = null;
 
 const isAdmin    = () => currentUser?.email === ADMIN_EMAIL;
 const isLoggedIn = () => !!currentUser;
+
+function formatTime(t){
+  if(!t) return '';
+  const [h,m] = t.split(':').map(Number);
+  const ampm = h < 12 ? '오전' : '오후';
+  const hour = h === 0 ? 12 : h > 12 ? h - 12 : h;
+  return `${ampm} ${hour}:${String(m).padStart(2,'0')}`;
+}
 const getD  = r => r.dealers  ? Object.values(r.dealers)  : [];
 const getS  = r => r.supports ? Object.values(r.supports) : [];
-const isFull= r => getD(r).length >= r.maxDealer && getS(r).length >= r.maxSupport;
-const isDone= r => !!r.done;
+const isFull  = r => getD(r).length >= r.maxDealer && getS(r).length >= r.maxSupport;
+const isDone  = r => !!r.done;
+const isClosed= r => !!r.closed; // 수동 마감
+
+// 출발 시간 파싱: "3/20(금)" + "23:00" → Date
+function parseRaidDateTime(r){
+  try{
+    const now = new Date();
+    const dateMatch = (r.date||'').match(/(\d+)\/(\d+)/);
+    if(!dateMatch) return null;
+    const [,mon,day] = dateMatch;
+    const [hh,mm] = (r.time||'00:00').split(':').map(Number);
+    // 올해 기준, 지나면 내년으로
+    let d = new Date(now.getFullYear(), +mon-1, +day, hh, mm, 0);
+    if(d < new Date(now.getFullYear()-1, 0, 1)) d.setFullYear(now.getFullYear()+1);
+    return d;
+  } catch(e){ return null; }
+}
+
+// 출발시간 지났으면 → 마감, 출발시간+2시간 지났으면 → 완료
+function getAutoStatus(r){
+  if(isDone(r)) return 'done';
+  const dt = parseRaidDateTime(r);
+  if(!dt) return null;
+  const now = Date.now();
+  if(now >= dt.getTime() + 30*60*1000) return 'auto-done';  // +30분 → 완료
+  if(now >= dt.getTime()) return 'auto-closed';                 // 출발시간 지남 → 마감
+  return null;
+}
+
+function isEffectivelyClosed(r){
+  return isFull(r) || isClosed(r) || getAutoStatus(r)==='auto-closed' || getAutoStatus(r)==='auto-done';
+}
+function isEffectivelyDone(r){
+  return isDone(r) || getAutoStatus(r)==='auto-done';
+}
 
 // ── localStorage 안전 wrapper ──
 const storage = {
@@ -598,8 +644,10 @@ function startListeners(){
       }
     };
     rebuildSidebar();
-    renderAll(); // re-render cards so color changes apply immediately
+    renderAll();
   });
+  // 30초마다 카드 재렌더 → 출발시간 기반 자동 상태 갱신
+  setInterval(()=>renderAll(), 30000);
 }
 
 // ── AUTH ──
@@ -703,10 +751,10 @@ function renderAll(){
 
 function rebuildSidebar(){
   const entries = Object.entries(raidsData);
-  const notDone = entries.filter(([,r])=>!isDone(r));
-  const recEntries  = notDone.filter(([,r])=>!isFull(r));
-  const fullEntries = notDone.filter(([,r])=>isFull(r));
-  const doneEntries = entries.filter(([,r])=>isDone(r));
+  const notDone = entries.filter(([,r])=>!isEffectivelyDone(r));
+  const recEntries  = notDone.filter(([,r])=>!isEffectivelyClosed(r));
+  const fullEntries = notDone.filter(([,r])=>isEffectivelyClosed(r));
+  const doneEntries = entries.filter(([,r])=>isEffectivelyDone(r));
 
   document.getElementById('badge-all').textContent  = entries.length;
   document.getElementById('badge-rec').textContent  = recEntries.length;
@@ -739,9 +787,9 @@ function rebuildSidebar(){
 function renderPage(page){
   if(page==='all'){
     const entries=Object.entries(raidsData).sort((a,b)=>b[1].createdAt-a[1].createdAt);
-    const rec  = entries.filter(([,r])=>!isDone(r)&&!isFull(r));
-    const full = entries.filter(([,r])=>!isDone(r)&&isFull(r));
-    const done = entries.filter(([,r])=>isDone(r));
+    const rec  = entries.filter(([,r])=>!isEffectivelyDone(r)&&!isEffectivelyClosed(r));
+    const full = entries.filter(([,r])=>!isEffectivelyDone(r)&&isEffectivelyClosed(r));
+    const done = entries.filter(([,r])=>isEffectivelyDone(r));
     let html='';
     if(rec.length)  html+=section('🔍 모집 중', rec, '');
     if(full.length) html+=section('🔒 마감', full, 'red');
@@ -750,17 +798,17 @@ function renderPage(page){
     document.getElementById('content-all').innerHTML=html;
   }
   else if(page==='recruiting'){
-    const entries=Object.entries(raidsData).filter(([,r])=>!isDone(r)&&!isFull(r)).sort((a,b)=>b[1].createdAt-a[1].createdAt);
+    const entries=Object.entries(raidsData).filter(([,r])=>!isEffectivelyDone(r)&&!isEffectivelyClosed(r)).sort((a,b)=>b[1].createdAt-a[1].createdAt);
     document.getElementById('content-recruiting').innerHTML=
       entries.length ? groupByName(entries) : `<div class="empty-state"><span class="empty-icon">🔍</span>모집 중인 레이드가 없습니다.</div>`;
   }
   else if(page==='full'){
-    const entries=Object.entries(raidsData).filter(([,r])=>!isDone(r)&&isFull(r)).sort((a,b)=>b[1].createdAt-a[1].createdAt);
+    const entries=Object.entries(raidsData).filter(([,r])=>!isEffectivelyDone(r)&&isEffectivelyClosed(r)).sort((a,b)=>b[1].createdAt-a[1].createdAt);
     document.getElementById('content-full').innerHTML=
       entries.length ? groupByName(entries) : `<div class="empty-state"><span class="empty-icon">🔒</span>마감된 레이드가 없습니다.</div>`;
   }
   else if(page==='done'){
-    const entries=Object.entries(raidsData).filter(([,r])=>isDone(r)).sort((a,b)=>b[1].createdAt-a[1].createdAt);
+    const entries=Object.entries(raidsData).filter(([,r])=>isEffectivelyDone(r)).sort((a,b)=>b[1].createdAt-a[1].createdAt);
     document.getElementById('content-done').innerHTML=
       entries.length ? `<div class="raids-grid">${entries.map(([id,r])=>cardHTML(id,r)).join('')}</div>`
       : `<div class="empty-state"><span class="empty-icon">⭐</span>레이드완료 내역이 없습니다.</div>`;
@@ -771,7 +819,7 @@ function renderSubPage(){
   if(!currentSubFilter){ renderPage(currentPage); return; }
   const {type, name} = currentSubFilter;
   const entries = Object.entries(raidsData)
-    .filter(([,r])=> r.name===name && !isDone(r) && (type==='full'?isFull(r):!isFull(r)))
+    .filter(([,r])=> r.name===name && !isEffectivelyDone(r) && (type==='full'?isEffectivelyClosed(r):!isEffectivelyClosed(r)))
     .sort((a,b)=>b[1].createdAt-a[1].createdAt);
   document.getElementById('content-sub').innerHTML=
     entries.length ? `<div class="raids-grid">${entries.map(([id,r])=>cardHTML(id,r)).join('')}</div>`
@@ -801,7 +849,10 @@ function cardHTML(id, r){
   const myNick=currentUser?.displayName||'';
   const dl=getD(r), sp=getS(r);
   const total=dl.length+sp.length, max=r.maxDealer+r.maxSupport;
-  const full=isFull(r), done=isDone(r);
+  const autoStatus = getAutoStatus(r);
+  const done = isDone(r) || autoStatus==='auto-done';
+  const manualClosed = isClosed(r);
+  const full = isEffectivelyClosed(r);
   const pct=Math.min(100,Math.round(total/max*100));
   const isMeIn=dl.includes(myNick)||sp.includes(myNick);
   const li=isLoggedIn(), admin=isAdmin();
@@ -815,48 +866,57 @@ function cardHTML(id, r){
 
   const prog=done?'done-fill':pct>=100?'done-fill':pct>=75?'danger':'';
   const sc=done?'done':full?'full':'recruiting';
-  const statusLabel=done?'레이드완료':full?'마감':'모집 중';
+  let statusLabel='모집 중';
+  if(done) statusLabel = autoStatus==='auto-done' ? '레이드완료' : '레이드완료';
+  else if(autoStatus==='auto-closed') statusLabel='시간마감';
+  else if(isFull(r)) statusLabel='마감(인원)';
+  else if(manualClosed) statusLabel='마감';
 
-  const raidColor = (cfg.colors?.raidNames||{})[r.name] || '';
-  // 레이드별 난이도 색상 우선, 없으면 공통 diffs 색상
-  const diffColor = (cfg.colors?.raidDiffs?.[r.name]||{})[r.diff] || (cfg.colors?.diffs||{})[r.diff] || '';
+  const raidColor=(cfg.colors?.raidNames||{})[r.name]||'';
+  const diffColor=(cfg.colors?.raidDiffs?.[r.name]||{})[r.diff]||(cfg.colors?.diffs||{})[r.diff]||'';
+  const diffStyle=diffColor
+    ?`style="color:${diffColor};background:${diffColor}22;border-color:${diffColor}66;"`
+    :`style=""`;
 
-  // diff badge: custom color overrides default accent
-  const diffStyle = diffColor
-    ? `style="color:${diffColor};background:${diffColor}22;border-color:${diffColor}66;"`
-    : `style=""`;
-
-  const isOwner = li && (currentUser.displayName === r.createdBy || isAdmin());
+  const isOwner=li&&(currentUser.displayName===r.createdBy||isAdmin());
   const mgmtBtns=li?`
     ${isOwner?`<button class="hdr-btn hdr-edit" onclick="window._edit('${id}')">수정</button>`:''}
     <button class="hdr-btn hdr-delete" onclick="window._delete('${id}')">삭제</button>
     ${done
       ?`<button class="hdr-btn hdr-undone" ${admin?'':'disabled title="관리자만 가능"'} onclick="window._toggleDone('${id}',false)">↩ 되돌리기</button>`
-      :`<button class="hdr-btn hdr-done" onclick="window._toggleDone('${id}',true)">완료</button>`
+      :`${isOwner
+        ?(manualClosed
+          ?`<button class="hdr-btn hdr-unclose" onclick="window._toggleClose('${id}',false)">마감해제</button>`
+          :`<button class="hdr-btn hdr-close"   onclick="window._toggleClose('${id}',true)">마감</button>`)
+        :''
+       }
+       <button class="hdr-btn hdr-done" onclick="window._toggleDone('${id}',true)">완료</button>`
     }`:'';
 
-  const actionRow=done?''
-    :!li?`<div class="login-required-msg">참여하려면 <a onclick="openAuthModal()">로그인</a>이 필요합니다</div>`
-    :`<div class="card-actions">
-      <button class="action-btn btn-dealer"  ${dl.length>=r.maxDealer||isMeIn?'disabled':''} onclick="window._join('${id}','dealer')">⚔️ 딜러 신청</button>
-      <button class="action-btn btn-support" ${sp.length>=r.maxSupport||isMeIn?'disabled':''} onclick="window._join('${id}','support')">🛡 서폿 신청</button>
-      <button class="action-btn btn-cancel"  ${!isMeIn?'disabled':''} onclick="window._leave('${id}')">신청 취소</button>
-    </div>`;
+  const actionRow=done
+    ?''
+    :full
+      ?`<div class="login-required-msg" style="color:var(--red);border-top:1px solid var(--border);padding:10px 15px 12px;">🔒 모집이 마감되었습니다</div>`
+      :!li
+        ?`<div class="login-required-msg">참여하려면 <a onclick="openAuthModal()">로그인</a>이 필요합니다</div>`
+        :`<div class="card-actions">
+          <button class="action-btn btn-dealer"  ${dl.length>=r.maxDealer||isMeIn?'disabled':''} onclick="window._join('${id}','dealer')">⚔️ 딜러 신청</button>
+          <button class="action-btn btn-support" ${sp.length>=r.maxSupport||isMeIn?'disabled':''} onclick="window._join('${id}','support')">🛡 서폿 신청</button>
+          <button class="action-btn btn-cancel"  ${!isMeIn?'disabled':''} onclick="window._leave('${id}')">신청 취소</button>
+        </div>`;
 
   return `
   <div class="raid-card ${done?'done-card':full?'full-card':''}">
     <div class="card-header">
       <div class="card-title-group">
         <span class="card-title" ${raidColor?`style="color:${raidColor}"`:''}>${r.name}</span>
-        <span class="diff-badge" ${diffStyle}>${r.diff}</span>
+        <span class="diff-badge" ${diffStyle}>${r.diff||''}</span>
         <span class="card-status ${sc}">${statusLabel}</span>
       </div>
-      <div class="card-header-right">
-        ${mgmtBtns}
-      </div>
+      <div class="card-header-right">${mgmtBtns}</div>
     </div>
     <div class="card-meta">
-      <div class="meta-item"><span class="meta-label">출발 시간</span><span class="meta-value">${r.date} ${r.time}</span></div>
+      <div class="meta-item"><span class="meta-label">출발 시간</span><span class="meta-value">${r.date} ${formatTime(r.time)}</span></div>
       <div class="meta-item"><span class="meta-label">인원</span><span class="meta-value">${total}/${max}</span></div>
       ${r.createdBy?`<div class="meta-item"><span class="meta-label">작성자</span><span class="meta-value">${r.createdBy}</span></div>`:''}
     </div>
@@ -906,6 +966,13 @@ window._leave = async (id) => {
     if(r.dealers)  for(const [k,v] of Object.entries(r.dealers))  if(v===myNick) await remove(ref(db,`raids/${id}/dealers/${k}`));
     if(r.supports) for(const [k,v] of Object.entries(r.supports)) if(v===myNick) await remove(ref(db,`raids/${id}/supports/${k}`));
     showToast('신청이 취소되었습니다');
+  } catch(e){ showToast('오류: '+e.message,'error'); }
+};
+
+window._toggleClose = async (id, closed) => {
+  try{
+    await update(ref(db,`raids/${id}`),{closed});
+    showToast(closed?'🔒 마감 처리되었습니다':'🔓 마감이 해제되었습니다','success');
   } catch(e){ showToast('오류: '+e.message,'error'); }
 };
 
@@ -1188,7 +1255,29 @@ window.renderDiffColorForRaid=(raidName)=>{
     </div>`;
   }).join('');
 };
+window.setItemColor=(colorKey, name, color)=>{
+  if(!cfgDraft.colors) cfgDraft.colors={raidNames:{},diffs:{},raidDiffs:{}};
+  if(!cfgDraft.colors[colorKey]) cfgDraft.colors[colorKey]={};
+  // 중복 체크: 레이드 이름 색 ↔ 모든 난이도 색 겹침 방지
+  if(colorKey==='raidNames'){
+    const allDiffColors=[...new Set(Object.values(cfgDraft.colors.raidDiffs||{}).flatMap(o=>Object.values(o)))];
+    if(allDiffColors.includes(color)){
+      showToast('⚠️ 난이도 색상과 겹칩니다','error'); return;
+    }
+  }
+  cfgDraft.colors[colorKey][name] = color;
+  renderColorPickers();
+};
+window.clearItemColor=(colorKey, name)=>{
+  if(cfgDraft.colors?.[colorKey]) delete cfgDraft.colors[colorKey][name];
+  renderColorPickers();
+};
 window.setDiffColor=(raidName,diffName,color)=>{
+  // 중복 체크: 레이드 이름 색상과 겹치면 경고
+  const raidColors=Object.values(cfgDraft.colors.raidNames||{});
+  if(raidColors.includes(color)){
+    showToast('⚠️ 레이드 이름 색상과 겹칩니다','error'); return;
+  }
   if(!cfgDraft.colors.raidDiffs) cfgDraft.colors.raidDiffs={};
   if(!cfgDraft.colors.raidDiffs[raidName]) cfgDraft.colors.raidDiffs[raidName]={};
   cfgDraft.colors.raidDiffs[raidName][diffName]=color;
