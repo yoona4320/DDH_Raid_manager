@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>레이드 현황 1203</title>
+<title>레이드 현황</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎮</text></svg>">
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;900&family=Rajdhani:wght@600;700&display=swap" rel="stylesheet">
 <style>
@@ -122,10 +122,10 @@ body{font-family:'Noto Sans KR',sans-serif;background:var(--bg);color:var(--text
   display:flex;align-items:center;justify-content:space-between;gap:8px;}
 .card-title-group{display:flex;align-items:center;gap:6px;flex-wrap:wrap;flex:1;min-width:0;}
 .card-title{font-size:14px;font-weight:700;line-height:1.3;}
-.diff-badge{font-size:10px;font-weight:700;border-radius:4px;padding:2px 7px;
-  background:rgba(91,110,245,.18);color:var(--accent);flex-shrink:0;border:1px solid transparent;}
-/* when custom color is set via inline style, background override also needed */
-.diff-badge[style]{background:transparent!important;}
+.diff-badge{font-size:10px;font-weight:700;border-radius:20px;padding:2px 9px;
+  background:transparent;color:var(--text2);flex-shrink:0;border:1px solid var(--border);}
+/* custom color overrides */
+.diff-badge[style*="color"]{background:transparent!important;}
 /* status badge now sits inline next to diff */
 .card-status{font-size:10px;border-radius:4px;padding:2px 7px;font-weight:700;white-space:nowrap;flex-shrink:0;}
 .card-status.recruiting{background:rgba(91,110,245,.15);color:var(--accent);border:1px solid rgba(91,110,245,.4);}
@@ -417,15 +417,24 @@ body{font-family:'Noto Sans KR',sans-serif;background:var(--bg);color:var(--text
 
 <!-- JOB SELECT MODAL -->
 <div class="modal-overlay" id="job-modal">
-  <div class="modal" style="max-width:360px;">
+  <div class="modal" style="max-width:380px;">
     <div class="modal-title" id="job-modal-title">⚔️ 직업 선택</div>
-    <div class="form-group">
-      <label>참여 직업을 선택해주세요</label>
-      <select id="job-select" style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:9px 12px;color:var(--text);font-size:14px;font-family:'Noto Sans KR',sans-serif;outline:none;">
-      </select>
-    </div>
-    <div id="job-no-list" style="display:none;font-size:13px;color:var(--text3);padding:8px 0;">
+    <div id="job-no-list" style="display:none;font-size:13px;color:var(--text3);padding:4px 0 12px;">
       설정된 직업이 없습니다. 설정 → 직업 탭에서 추가해주세요.
+    </div>
+    <div id="job-form">
+      <div class="form-group">
+        <label>배경</label>
+        <select id="jm-bg" onchange="jmUpdateJobs()" style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:9px 12px;color:var(--text);font-size:14px;font-family:'Noto Sans KR',sans-serif;outline:none;"></select>
+      </div>
+      <div class="form-group">
+        <label>직업</label>
+        <select id="jm-job" onchange="jmUpdateEffects()" style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:9px 12px;color:var(--text);font-size:14px;font-family:'Noto Sans KR',sans-serif;outline:none;"></select>
+      </div>
+      <div class="form-group" id="jm-effect-group">
+        <label>효과 <span style="color:var(--text3);font-size:11px;">(직업에 고정)</span></label>
+        <div id="jm-effects" style="display:flex;flex-wrap:wrap;gap:7px;min-height:32px;padding:4px 0;"></div>
+      </div>
     </div>
     <div class="modal-actions">
       <button class="btn-mcancel" onclick="closeJobModal()">취소</button>
@@ -441,7 +450,7 @@ body{font-family:'Noto Sans KR',sans-serif;background:var(--bg);color:var(--text
     <div class="stabs">
       <button class="stab active" onclick="switchStab('raids',this)">레이드 이름</button>
       <button class="stab" onclick="switchStab('diffs',this)">난이도</button>
-      <button class="stab" onclick="switchStab('jobs',this)">직업</button>
+      <button class="stab" onclick="switchStab('jobs',this);renderJobBgList();">직업</button>
       <button class="stab" onclick="switchStab('counts',this)">인원 수</button>
       <button class="stab" onclick="switchStab('colors',this)">글자색</button>
     </div>
@@ -471,19 +480,43 @@ body{font-family:'Noto Sans KR',sans-serif;background:var(--bg);color:var(--text
     </div>
     <div class="stab-panel" id="stab-jobs">
       <div class="s-section">
-        <div class="s-section-title">딜러 직업 목록</div>
-        <div class="tag-list" id="st-dealer-job-tags"></div>
-        <div class="tag-add-row">
-          <input type="text" id="st-dealer-job-input" placeholder="딜러 직업 추가 (예: 워로드)" maxlength="15" onkeydown="if(event.key==='Enter')stAddJob('dealer')">
-          <button class="btn-add-tag" onclick="stAddJob('dealer')">＋ 추가</button>
+        <div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap;">
+          <div style="flex:1;min-width:120px;">
+            <div class="s-section-title">역할</div>
+            <select id="job-role-select" onchange="renderJobBgList()" style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:8px 10px;color:var(--text);font-size:13px;font-family:'Noto Sans KR',sans-serif;outline:none;">
+              <option value="dealer">딜러</option>
+              <option value="support">서폿</option>
+            </select>
+          </div>
+          <div style="flex:1;min-width:120px;">
+            <div class="s-section-title">배경 선택</div>
+            <select id="job-bg-select" onchange="renderJobList()" style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:8px 10px;color:var(--text);font-size:13px;font-family:'Noto Sans KR',sans-serif;outline:none;"></select>
+          </div>
+          <div style="flex:1;min-width:120px;">
+            <div class="s-section-title">직업 선택</div>
+            <select id="job-job-select" onchange="renderEffectList()" style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:8px 10px;color:var(--text);font-size:13px;font-family:'Noto Sans KR',sans-serif;outline:none;"></select>
+          </div>
         </div>
-      </div>
-      <div class="s-section" style="margin-top:16px;">
-        <div class="s-section-title">서폿 직업 목록</div>
-        <div class="tag-list" id="st-support-job-tags"></div>
+        <!-- 배경 관리 -->
+        <div class="s-section-title">배경 목록</div>
+        <div class="tag-list" id="st-bg-tags" style="margin-bottom:6px;"></div>
+        <div class="tag-add-row" style="margin-bottom:14px;">
+          <input type="text" id="st-bg-input" placeholder="배경 추가 (예: 아르데타인)" maxlength="20" onkeydown="if(event.key==='Enter')stAddBg()">
+          <button class="btn-add-tag" onclick="stAddBg()">＋ 배경</button>
+        </div>
+        <!-- 직업 관리 -->
+        <div class="s-section-title">직업 목록 (선택된 배경 기준)</div>
+        <div class="tag-list" id="st-job-tags" style="margin-bottom:6px;"></div>
+        <div class="tag-add-row" style="margin-bottom:14px;">
+          <input type="text" id="st-job-input" placeholder="직업 추가 (예: 데헌)" maxlength="15" onkeydown="if(event.key==='Enter')stAddJobItem()">
+          <button class="btn-add-tag" onclick="stAddJobItem()">＋ 직업</button>
+        </div>
+        <!-- 효과 관리 -->
+        <div class="s-section-title">효과 목록 (선택된 직업 기준)</div>
+        <div class="tag-list" id="st-effect-tags" style="margin-bottom:6px;"></div>
         <div class="tag-add-row">
-          <input type="text" id="st-support-job-input" placeholder="서폿 직업 추가 (예: 홀리나이트)" maxlength="15" onkeydown="if(event.key==='Enter')stAddJob('support')">
-          <button class="btn-add-tag" onclick="stAddJob('support')">＋ 추가</button>
+          <input type="text" id="st-effect-input" placeholder="효과 추가 (예: 피증)" maxlength="15" onkeydown="if(event.key==='Enter')stAddEffect()">
+          <button class="btn-add-tag" onclick="stAddEffect()">＋ 효과</button>
         </div>
       </div>
     </div>
@@ -562,7 +595,8 @@ const icons = ['⚔️','🔥','💀','🌑','🌊','⚡','🐉','💎'];
 const DEFAULT = {
   raidNames:[],
   raidDiffs:{},
-  jobs:{ dealer:[], support:[] },
+  // jobs: { dealer: { bgName: { jobName: [effect,...] } }, support: {...} }
+  jobs:{ dealer:{}, support:{} },
   maxDealer:4, maxSupport:2,
   colors:{ raidNames:{}, diffs:{}, raidDiffs:{} }
 };
@@ -674,7 +708,7 @@ function startListeners(){
     if(v) cfg={
       raidNames: v.raidNames||DEFAULT.raidNames,
       raidDiffs: v.raidDiffs||DEFAULT.raidDiffs,
-      jobs:      { dealer:(v.jobs&&v.jobs.dealer)||[], support:(v.jobs&&v.jobs.support)||[] },
+      jobs:      { dealer:(v.jobs&&v.jobs.dealer)||{}, support:(v.jobs&&v.jobs.support)||{} },
       maxDealer: v.maxDealer??DEFAULT.maxDealer,
       maxSupport:v.maxSupport??DEFAULT.maxSupport,
       colors:{
@@ -902,7 +936,12 @@ function cardHTML(id, r){
     if(entry){
       const nick=typeof entry==='object'?entry.nick:entry;
       const job=typeof entry==='object'?entry.job:'';
-      return `<div class="member-tag${nick===myNick?' me':''}"><span class="role-dot dealer"></span>${nick}${job?` <span style="font-size:10px;color:var(--text3);">(${job})</span>`:''}</div>`;
+      const effects=typeof entry==='object'&&entry.effects?.length?entry.effects:[];
+      const effectStr=effects.length?`(${effects.join('/')})` : '';
+      const label=job
+        ? `<span style="color:#fff;font-weight:700;">${nick}</span><span style="color:#fff;font-weight:700;">[${job}]</span>${effectStr?`<span style="color:var(--text2);font-size:10px;">${effectStr}</span>`:''}`
+        : `<span style="color:#fff;font-weight:700;">${nick}</span>`;
+      return `<div class="member-tag${nick===myNick?' me':''}"><span class="role-dot dealer"></span>${label}</div>`;
     }
     return `<div class="slot-empty">— 빈자리</div>`;
   }).join('');
@@ -911,7 +950,12 @@ function cardHTML(id, r){
     if(entry){
       const nick=typeof entry==='object'?entry.nick:entry;
       const job=typeof entry==='object'?entry.job:'';
-      return `<div class="member-tag${nick===myNick?' me':''}"><span class="role-dot support"></span>${nick}${job?` <span style="font-size:10px;color:var(--text3);">(${job})</span>`:''}</div>`;
+      const effects=typeof entry==='object'&&entry.effects?.length?entry.effects:[];
+      const effectStr=effects.length?`(${effects.join('/')})` : '';
+      const label=job
+        ? `<span style="color:#fff;font-weight:700;">${nick}</span><span style="color:#fff;font-weight:700;">[${job}]</span>${effectStr?`<span style="color:var(--text2);font-size:10px;">${effectStr}</span>`:''}`
+        : `<span style="color:#fff;font-weight:700;">${nick}</span>`;
+      return `<div class="member-tag${nick===myNick?' me':''}"><span class="role-dot support"></span>${label}</div>`;
     }
     return `<div class="slot-empty">— 빈자리</div>`;
   }).join('');
@@ -919,9 +963,9 @@ function cardHTML(id, r){
   const prog=done?'done-fill':pct>=100?'done-fill':pct>=75?'danger':'';
   const sc=done?'done':full?'full':'recruiting';
   let statusLabel='모집 중';
-  if(done) statusLabel = autoStatus==='auto-done' ? '레이드완료' : '레이드완료';
+  if(done) statusLabel='레이드완료';
   else if(autoStatus==='auto-closed') statusLabel='시간마감';
-  else if(isFull(r)) statusLabel='마감(인원)';
+  else if(isFull(r)) statusLabel='인원마감';
   else if(manualClosed) statusLabel='마감';
 
   const raidColor=(cfg.colors?.raidNames||{})[r.name]||'';
@@ -931,15 +975,17 @@ function cardHTML(id, r){
     :`style=""`;
 
   const isOwner=li&&(currentUser.displayName===r.createdBy||isAdmin());
+  // 마감여부: 수동마감 OR 인원마감 OR 시간마감 (자동완료 제외)
+  const isAnyClosed = !done && (manualClosed || isFull(r) || autoStatus==='auto-closed');
   const mgmtBtns=li?`
     ${isOwner?`<button class="hdr-btn hdr-edit" onclick="window._edit('${id}')">수정</button>`:''}
     <button class="hdr-btn hdr-delete" onclick="window._delete('${id}')">삭제</button>
     ${done
       ?`<button class="hdr-btn hdr-undone" ${admin?'':'disabled title="관리자만 가능"'} onclick="window._toggleDone('${id}',false)">↩ 되돌리기</button>`
       :`${isOwner
-        ?(manualClosed
+        ?(isAnyClosed
           ?`<button class="hdr-btn hdr-unclose" onclick="window._toggleClose('${id}',false)">마감해제</button>`
-          :`<button class="hdr-btn hdr-close"   onclick="window._toggleClose('${id}',true)">마감</button>`)
+          :`<button class="hdr-btn hdr-close" onclick="window._toggleClose('${id}',true)">마감</button>`)
         :''
        }
        <button class="hdr-btn hdr-done" onclick="window._toggleDone('${id}',true)">완료</button>`
@@ -992,7 +1038,7 @@ function cardHTML(id, r){
 
 // ── ACTIONS ──
 // ── JOB MODAL ──
-let _jobPending = null; // { id, role }
+let _jobPending = null;
 window._openJobModal = (id, role) => {
   if(!isLoggedIn()){ openAuthModal(); return; }
   const r=raidsData[id]; if(!r) return;
@@ -1000,37 +1046,61 @@ window._openJobModal = (id, role) => {
   const myNick=currentUser.displayName;
   if(dl.includes(myNick)||sp.includes(myNick)){ showToast('이미 참여 중입니다','error'); return; }
   _jobPending={id,role};
-  const jobs=(role==='dealer'?cfg.jobs?.dealer:cfg.jobs?.support)||[];
-  const title=role==='dealer'?'⚔️ 딜러 직업 선택':'🛡 서폿 직업 선택';
-  document.getElementById('job-modal-title').textContent=title;
-  const sel=document.getElementById('job-select');
-  const noList=document.getElementById('job-no-list');
-  const confirmBtn=document.getElementById('job-confirm-btn');
-  if(!jobs.length){
-    sel.style.display='none'; noList.style.display='block'; confirmBtn.disabled=true;
-  } else {
-    sel.style.display='block'; noList.style.display='none'; confirmBtn.disabled=false;
-    sel.innerHTML=jobs.map(j=>`<option value="${j}">${j}</option>`).join('');
+  const jobs=cfg.jobs?.[role]||{};
+  const hasBgs=Object.keys(jobs).length>0;
+  document.getElementById('job-modal-title').textContent=role==='dealer'?'⚔️ 딜러 직업 선택':'🛡 서폿 직업 선택';
+  document.getElementById('job-no-list').style.display=hasBgs?'none':'block';
+  document.getElementById('job-form').style.display=hasBgs?'block':'none';
+  document.getElementById('job-confirm-btn').disabled=!hasBgs;
+  if(hasBgs){
+    const bgSel=document.getElementById('jm-bg');
+    bgSel.innerHTML=Object.keys(jobs).map(b=>`<option value="${b}">${b}</option>`).join('');
+    jmUpdateJobs();
   }
   document.getElementById('job-modal').classList.add('open');
+};
+window.jmUpdateJobs=()=>{
+  const role=_jobPending?.role||'dealer';
+  const bg=document.getElementById('jm-bg').value;
+  const jobs=Object.keys(cfg.jobs?.[role]?.[bg]||{});
+  const sel=document.getElementById('jm-job');
+  sel.innerHTML=jobs.length?jobs.map(j=>`<option value="${j}">${j}</option>`):'<option value="">직업 없음</option>';
+  jmUpdateEffects();
+};
+window.jmUpdateEffects=()=>{
+  const role=_jobPending?.role||'dealer';
+  const bg=document.getElementById('jm-bg').value;
+  const job=document.getElementById('jm-job').value;
+  const effects=cfg.jobs?.[role]?.[bg]?.[job]||[];
+  const cont=document.getElementById('jm-effects');
+  const grp=document.getElementById('jm-effect-group');
+  grp.style.display=effects.length?'block':'none';
+  if(!effects.length){ cont.innerHTML=''; return; }
+  // 효과는 직업에 고정 — 자동 표시
+  cont.innerHTML=effects.map(e=>`
+    <span style="background:var(--surface2);border:1px solid var(--border);border-radius:7px;
+      padding:4px 10px;font-size:12px;color:var(--text);">${e}</span>`).join('');
 };
 window.closeJobModal=()=>{ document.getElementById('job-modal').classList.remove('open'); _jobPending=null; };
 document.getElementById('job-modal').addEventListener('click',e=>{ if(e.target===e.currentTarget) closeJobModal(); });
 window.confirmJob=async()=>{
   if(!_jobPending) return;
   const {id,role}=_jobPending;
-  const job=document.getElementById('job-select').value||'';
+  const bg=document.getElementById('jm-bg')?.value||'';
+  const job=document.getElementById('jm-job')?.value||'';
+  const effects=cfg.jobs?.[role]?.[bg]?.[job]||[];
   const myNick=currentUser.displayName;
   const r=raidsData[id]; if(!r) return;
   const dl=getD(r), sp=getS(r);
   try{
+    const entry={nick:myNick, bg, job, effects};
     if(role==='dealer'){
       if(dl.length>=r.maxDealer){ showToast('딜러 자리가 꽉 찼습니다','error'); return; }
-      await push(ref(db,`raids/${id}/dealers`),{nick:myNick,job});
+      await push(ref(db,`raids/${id}/dealers`),entry);
       showToast('⚔️ 딜러 신청 완료!','success');
     } else {
       if(sp.length>=r.maxSupport){ showToast('서폿 자리가 꽉 찼습니다','error'); return; }
-      await push(ref(db,`raids/${id}/supports`),{nick:myNick,job});
+      await push(ref(db,`raids/${id}/supports`),entry);
       showToast('🛡 서폿 신청 완료!','success');
     }
     closeJobModal();
@@ -1162,11 +1232,13 @@ window.openSettings=()=>{
   cfgDraft=JSON.parse(JSON.stringify(cfg));
   if(!cfgDraft.colors) cfgDraft.colors={raidNames:{},diffs:{},raidDiffs:{}};
   if(!cfgDraft.raidDiffs) cfgDraft.raidDiffs={};
-  if(!cfgDraft.jobs) cfgDraft.jobs={dealer:[],support:[]};
+  if(!cfgDraft.jobs) cfgDraft.jobs={dealer:{},support:{}};
+  if(Array.isArray(cfgDraft.jobs.dealer)) cfgDraft.jobs.dealer={};
+  if(Array.isArray(cfgDraft.jobs.support)) cfgDraft.jobs.support={};
   document.getElementById('dealer-val').textContent=cfgDraft.maxDealer;
   document.getElementById('support-val').textContent=cfgDraft.maxSupport;
   renderStTags();
-  renderJobTags();
+  setTimeout(()=>renderJobBgList(), 0);
   renderDiffRaidSelect();
   renderColorPickers();
   document.getElementById('settings-modal').classList.add('open');
@@ -1181,39 +1253,154 @@ window.switchStab=(tab,el)=>{
 function renderStTags(){
   renderDraggableList('st-raid-tags',cfgDraft.raidNames,'raidNames');
 }
-function renderJobTags(){
-  renderSimpleTagList('st-dealer-job-tags', cfgDraft.jobs?.dealer||[], 'dealer');
-  renderSimpleTagList('st-support-job-tags', cfgDraft.jobs?.support||[], 'support');
-}
-function renderSimpleTagList(containerId, items, role){
-  const el=document.getElementById(containerId);
+function renderJobTags(){ /* legacy - no-op now */ }
+window.stDelJob=(role,i)=>{ /* legacy */ };
+window.stAddJob=(role)=>{ /* legacy */ };
+window.stEditJob=(role,i,val)=>{ /* legacy */ };
+
+// ── 직업 설정 JS (배경>직업>효과) ──
+function getJobRole(){ return document.getElementById('job-role-select')?.value||'dealer'; }
+function getJobBg(){   return document.getElementById('job-bg-select')?.value||''; }
+function getJobJob(){  return document.getElementById('job-job-select')?.value||''; }
+
+window.renderJobBgList=()=>{
+  const role=getJobRole();
+  const bgs=Object.keys(cfgDraft.jobs[role]||{});
+  const sel=document.getElementById('job-bg-select');
+  sel.innerHTML=bgs.length ? bgs.map(b=>`<option value="${b}">${b}</option>`).join('') : '<option value="">배경 없음</option>';
+  renderBgTags(); renderJobList();
+};
+window.renderJobList=()=>{
+  const role=getJobRole(), bg=getJobBg();
+  const jobs=bg ? Object.keys((cfgDraft.jobs[role]||{})[bg]||{}) : [];
+  const sel=document.getElementById('job-job-select');
+  sel.innerHTML=jobs.length ? jobs.map(j=>`<option value="${j}">${j}</option>`).join('') : '<option value="">직업 없음</option>';
+  renderJobItemTags(); renderEffectList();
+};
+window.renderEffectList=()=>{ renderEffectTags(); };
+
+function renderBgTags(){
+  const role=getJobRole();
+  const bgs=Object.keys(cfgDraft.jobs[role]||{});
+  const el=document.getElementById('st-bg-tags');
   if(!el) return;
-  if(!items.length){ el.innerHTML='<span style="color:var(--text3);font-size:12px;">직업 없음 — 아래에서 추가하세요</span>'; return; }
-  el.innerHTML=items.map((v,i)=>`
+  if(!bgs.length){ el.innerHTML='<span style="color:var(--text3);font-size:12px;">배경 없음</span>'; return; }
+  el.innerHTML=bgs.map((b,i)=>`
     <div class="tag-item">
-      <span class="tag-drag">⠿</span>
-      <span class="tag-label">${v}</span>
-      <button class="tag-del" onclick="stDelJob('${role}',${i})">✕</button>
+      <span class="tag-drag" style="cursor:default;">⠿</span>
+      <input class="tag-edit-input" value="${b}" onblur="stEditBg('${b}',this.value)" onkeydown="if(event.key==='Enter')this.blur()" style="flex:1;background:transparent;border:none;color:var(--text);font-size:13px;font-family:'Noto Sans KR',sans-serif;outline:none;min-width:0;">
+      <button class="tag-del" onclick="stDelBg('${b}')">✕</button>
     </div>`).join('');
 }
-window.stDelJob=(role,i)=>{ cfgDraft.jobs[role].splice(i,1); renderJobTags(); };
-window.stAddJob=(role)=>{
-  const inp=document.getElementById(`st-${role==='dealer'?'dealer':'support'}-job-input`);
-  const v=inp.value.trim(); if(!v) return;
-  if(!cfgDraft.jobs) cfgDraft.jobs={dealer:[],support:[]};
-  if(cfgDraft.jobs[role].includes(v)){showToast('이미 있는 직업입니다','error');return;}
-  cfgDraft.jobs[role].push(v); inp.value=''; renderJobTags();
+function renderJobItemTags(){
+  const role=getJobRole(), bg=getJobBg();
+  const jobs=bg ? Object.keys((cfgDraft.jobs[role]||{})[bg]||{}) : [];
+  const el=document.getElementById('st-job-tags');
+  if(!el) return;
+  if(!bg){ el.innerHTML='<span style="color:var(--text3);font-size:12px;">배경을 먼저 선택하세요</span>'; return; }
+  if(!jobs.length){ el.innerHTML='<span style="color:var(--text3);font-size:12px;">직업 없음</span>'; return; }
+  el.innerHTML=jobs.map(j=>`
+    <div class="tag-item">
+      <span class="tag-drag" style="cursor:default;">⠿</span>
+      <input class="tag-edit-input" value="${j}" onblur="stEditJobItem('${j}',this.value)" onkeydown="if(event.key==='Enter')this.blur()" style="flex:1;background:transparent;border:none;color:var(--text);font-size:13px;font-family:'Noto Sans KR',sans-serif;outline:none;min-width:0;">
+      <button class="tag-del" onclick="stDelJobItem('${j}')">✕</button>
+    </div>`).join('');
+}
+function renderEffectTags(){
+  const role=getJobRole(), bg=getJobBg(), job=getJobJob();
+  const effects=job ? ((cfgDraft.jobs[role]||{})[bg]||{})[job]||[] : [];
+  const el=document.getElementById('st-effect-tags');
+  if(!el) return;
+  if(!job){ el.innerHTML='<span style="color:var(--text3);font-size:12px;">직업을 먼저 선택하세요</span>'; return; }
+  if(!effects.length){ el.innerHTML='<span style="color:var(--text3);font-size:12px;">효과 없음</span>'; return; }
+  el.innerHTML=effects.map((e,i)=>`
+    <div class="tag-item">
+      <input class="tag-edit-input" value="${e}" onblur="stEditEffect(${i},this.value)" onkeydown="if(event.key==='Enter')this.blur()" style="flex:1;background:transparent;border:none;color:var(--text);font-size:13px;font-family:'Noto Sans KR',sans-serif;outline:none;min-width:0;">
+      <button class="tag-del" onclick="stDelEffect(${i})">✕</button>
+    </div>`).join('');
+}
+
+window.stAddBg=()=>{
+  const inp=document.getElementById('st-bg-input'), v=inp.value.trim(); if(!v) return;
+  const role=getJobRole();
+  if(!cfgDraft.jobs[role]) cfgDraft.jobs[role]={};
+  if(cfgDraft.jobs[role][v]){showToast('이미 있는 배경입니다','error');return;}
+  cfgDraft.jobs[role][v]={}; inp.value='';
+  renderJobBgList();
+};
+window.stDelBg=(bg)=>{
+  const role=getJobRole();
+  delete cfgDraft.jobs[role][bg];
+  renderJobBgList();
+};
+window.stEditBg=(oldBg,newBg)=>{
+  newBg=newBg.trim(); if(!newBg||newBg===oldBg) return;
+  const role=getJobRole();
+  const data=cfgDraft.jobs[role][oldBg];
+  delete cfgDraft.jobs[role][oldBg];
+  cfgDraft.jobs[role][newBg]=data;
+  renderJobBgList();
+};
+window.stAddJobItem=()=>{
+  const inp=document.getElementById('st-job-input'), v=inp.value.trim(); if(!v) return;
+  const role=getJobRole(), bg=getJobBg(); if(!bg){showToast('배경을 먼저 선택하세요','error');return;}
+  if(!cfgDraft.jobs[role][bg]) cfgDraft.jobs[role][bg]={};
+  if(cfgDraft.jobs[role][bg][v]!==undefined){showToast('이미 있는 직업입니다','error');return;}
+  cfgDraft.jobs[role][bg][v]=[]; inp.value='';
+  renderJobList();
+};
+window.stDelJobItem=(job)=>{
+  const role=getJobRole(), bg=getJobBg();
+  if(cfgDraft.jobs[role]?.[bg]) delete cfgDraft.jobs[role][bg][job];
+  renderJobList();
+};
+window.stEditJobItem=(oldJob,newJob)=>{
+  newJob=newJob.trim(); if(!newJob||newJob===oldJob) return;
+  const role=getJobRole(), bg=getJobBg();
+  const data=cfgDraft.jobs[role][bg][oldJob];
+  delete cfgDraft.jobs[role][bg][oldJob];
+  cfgDraft.jobs[role][bg][newJob]=data;
+  renderJobList();
+};
+window.stAddEffect=()=>{
+  const inp=document.getElementById('st-effect-input'), v=inp.value.trim(); if(!v) return;
+  const role=getJobRole(), bg=getJobBg(), job=getJobJob();
+  if(!job){showToast('직업을 먼저 선택하세요','error');return;}
+  const arr=cfgDraft.jobs[role][bg][job]; if(!arr) return;
+  if(arr.includes(v)){showToast('이미 있는 효과입니다','error');return;}
+  arr.push(v); inp.value=''; renderEffectTags();
+};
+window.stDelEffect=(i)=>{
+  const role=getJobRole(), bg=getJobBg(), job=getJobJob();
+  if(cfgDraft.jobs[role]?.[bg]?.[job]) cfgDraft.jobs[role][bg][job].splice(i,1);
+  renderEffectTags();
+};
+window.stEditEffect=(i,val)=>{
+  val=val.trim(); if(!val) return;
+  const role=getJobRole(), bg=getJobBg(), job=getJobJob();
+  if(cfgDraft.jobs[role]?.[bg]?.[job]) cfgDraft.jobs[role][bg][job][i]=val;
+  renderEffectTags();
 };
 function renderDraggableList(containerId,items,key){
   const el=document.getElementById(containerId);
-  if(!items||!items.length){ el.innerHTML='<span style="color:var(--text3);font-size:12px;">난이도 없음 — 아래에서 추가하세요</span>'; return; }
+  if(!items||!items.length){ el.innerHTML='<span style="color:var(--text3);font-size:12px;">항목 없음 — 아래에서 추가하세요</span>'; return; }
   el.innerHTML=items.map((v,i)=>`
     <div class="tag-item" draggable="true" data-index="${i}" data-key="${key}">
-      <span class="tag-drag">⠿</span><span class="tag-label">${v}</span>
+      <span class="tag-drag">⠿</span>
+      <input class="tag-edit-input" value="${v}" onblur="stEditItem('${key}',${i},this.value)" onkeydown="if(event.key==='Enter')this.blur()" style="flex:1;background:transparent;border:none;color:var(--text);font-size:13px;font-family:'Noto Sans KR',sans-serif;outline:none;min-width:0;">
       <button class="tag-del" onclick="stDelItem('${key}',${i})">✕</button>
     </div>`).join('');
   initDrag(el,key);
 }
+window.stEditItem=(key,i,val)=>{
+  const v=val.trim(); if(!v) return;
+  if(key==='__diffs__'){
+    if(_selectedDiffRaid) cfgDraft.raidDiffs[_selectedDiffRaid][i]=v;
+    renderDiffTagsForSelected();
+  } else {
+    cfgDraft[key][i]=v; renderStTags();
+  }
+};
 window.stDelItem=(key,i)=>{
   if(key==='__diffs__'){
     if(_selectedDiffRaid) cfgDraft.raidDiffs[_selectedDiffRaid].splice(i,1);
