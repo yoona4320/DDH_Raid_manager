@@ -1033,17 +1033,20 @@ window.renderUserList = () => {
   document.getElementById('um-count').textContent = `총 ${users.length}명`;
   const el = document.getElementById('um-list');
   if(!users.length){ el.innerHTML='<div style="text-align:center;color:var(--text3);padding:20px;">회원이 없습니다.</div>'; return; }
-  el.innerHTML = users.map(([uid,u])=>`
-    <div style="display:flex;align-items:center;gap:8px;background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:10px 14px;">
+  el.innerHTML = users.map(([uid,u],idx)=>`
+    <div style="display:flex;align-items:center;gap:12px;background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:11px 14px;">
+      <span style="font-size:11px;color:var(--text3);min-width:22px;text-align:right;">${idx+1}</span>
       <div style="flex:1;min-width:0;">
-        <div style="font-size:13px;font-weight:700;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${u.nick||'(닉네임없음)'}</div>
-        <div style="font-size:11px;color:var(--text3);margin-top:2px;">${u.email||''}</div>
-        <div style="font-size:10px;color:var(--text3);margin-top:1px;">가입: ${u.createdAt?new Date(u.createdAt).toLocaleDateString('ko-KR'):'-'}</div>
+        <div style="font-size:13px;font-weight:700;color:var(--text);">${u.nick||'(닉네임없음)'}</div>
+        <div style="font-size:11px;color:var(--text3);margin-top:3px;">
+          📧 ${u.email||'-'}
+        </div>
+        <div style="font-size:11px;color:var(--text3);margin-top:2px;">
+          🔑 ••••••••&nbsp;&nbsp;
+          <span style="font-size:10px;">가입: ${u.createdAt?new Date(u.createdAt).toLocaleDateString('ko-KR'):'-'}</span>
+        </div>
       </div>
-      <button onclick="editUserNick('${uid}','${(u.nick||'').replace(/'/g,"\\'")}')"
-        style="padding:4px 8px;font-size:11px;background:rgba(91,110,245,.15);color:var(--accent);border:1px solid rgba(91,110,245,.3);border-radius:5px;cursor:pointer;font-family:'Noto Sans KR',sans-serif;white-space:nowrap;">✏️ 닉네임</button>
-      ${uid!==currentUser?.uid?`<button onclick="deleteUser_('${uid}','${(u.nick||'').replace(/'/g,"\\'")}')"
-        style="padding:4px 8px;font-size:11px;background:rgba(232,85,85,.12);color:var(--red);border:1px solid rgba(232,85,85,.3);border-radius:5px;cursor:pointer;font-family:'Noto Sans KR',sans-serif;white-space:nowrap;">탈퇴</button>`:''}
+      ${uid===currentUser?.uid?`<span style="font-size:10px;background:rgba(91,110,245,.2);color:var(--accent);border-radius:4px;padding:2px 6px;">나</span>`:''}
     </div>`).join('');
 };
 
@@ -1764,9 +1767,9 @@ function gameCardHTML(id, g){
 
   const memberSlots=[...Array(g.maxMembers)].map((_,i)=>{
     const m=members[i];
-    if(!m) return `<div class="slot-empty">— 빈자리</div>`;
+    if(!m) return `<div class="slot-empty" style="min-width:0;">— 빈자리</div>`;
     const nick=typeof m==='object'?m.nick:m;
-    return `<div class="member-tag${nick===myNick?' me':''}"><span class="role-dot" style="background:var(--accent);"></span><span style="color:#fff;font-weight:700;">${nick}</span></div>`;
+    return `<div class="member-tag${nick===myNick?' me':''}" style="min-width:0;"><span class="role-dot" style="background:var(--accent);flex-shrink:0;"></span><span style="color:#fff;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${nick}</span></div>`;
   }).join('');
 
   const mgmtBtns=li?`
@@ -1804,7 +1807,7 @@ function gameCardHTML(id, g){
     </div>
     <div style="padding:10px 15px 8px;">
       <div class="role-header" style="color:var(--accent);font-size:10px;font-weight:700;margin-bottom:6px;">참여자 ${members.length}/${g.maxMembers}</div>
-      <div style="display:flex;flex-wrap:wrap;gap:5px;">${memberSlots}</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:5px;">${memberSlots}</div>
     </div>
     ${actionRow}
   </div>`;
@@ -1985,8 +1988,13 @@ window.switchJobStab=(tab,el)=>{
   if(tab==='names') populateJobNameBgSel();
   if(tab==='effects') renderEffectTagsIndep();
   if(tab==='combos'){ populateComboSelects(); renderComboTags(); }
-  // 모든 서브탭 전환 시 모달 상단으로
-  setTimeout(()=>{ const m=document.querySelector('.settings-modal'); if(m) m.scrollTop=0; }, 0);
+  // 모달 + 패널 내 태그리스트 스크롤 상단
+  setTimeout(()=>{
+    const m=document.querySelector('.settings-modal'); if(m) m.scrollTop=0;
+    if(panel){
+      panel.querySelectorAll('.tag-list').forEach(tl=>tl.scrollTop=0);
+    }
+  }, 0);
 };
 
 // **수정 아이콘 태그 아이템 — startInlineEdit 통일**
