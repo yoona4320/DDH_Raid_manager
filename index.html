@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>도담회</title>
+<title>레이드 현황</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎮</text></svg>">
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;900&family=Rajdhani:wght@600;700&display=swap" rel="stylesheet">
 <style>
@@ -188,6 +188,9 @@ body{font-family:'Noto Sans KR',sans-serif;background:var(--bg);color:var(--text
 .btn-support:not(:disabled):hover{background:rgba(56,189,248,.25);}
 .btn-cancel{background:rgba(232,85,85,.12);color:var(--red);border:1px solid rgba(232,85,85,.3);}
 .btn-cancel:not(:disabled):hover{background:rgba(232,85,85,.22);}
+.btn-game-join{background:rgba(30,143,160,.15);color:#1e8fa0;border:1px solid rgba(30,143,160,.35);}
+.btn-game-join:not(:disabled):hover{background:rgba(30,143,160,.28);}
+.btn-game-join:disabled{opacity:.4;cursor:not-allowed;}
 .login-required-msg{text-align:center;padding:10px 15px 12px;border-top:1px solid var(--border);
   font-size:12px;color:var(--text3);}
 .login-required-msg a{color:var(--accent);cursor:pointer;text-decoration:underline;}
@@ -299,7 +302,7 @@ body{font-family:'Noto Sans KR',sans-serif;background:var(--bg);color:var(--text
 <div class="auth-modal-overlay" id="auth-modal">
   <div class="auth-box">
     <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:4px;">
-      <div class="auth-logo">도담회 현황</div>
+      <div class="auth-logo">레이드 현황</div>
       <button onclick="closeAuthModal()" style="background:none;border:none;color:var(--text3);font-size:20px;cursor:pointer;line-height:1;padding:0;">✕</button>
     </div>
     <div class="auth-sub">레이드 모집 관리 시스템</div>
@@ -330,7 +333,7 @@ body{font-family:'Noto Sans KR',sans-serif;background:var(--bg);color:var(--text
 <!-- APP -->
 <div class="app" id="app">
   <aside class="sidebar" id="sidebar">
-    <div class="sb-logo" onclick="navTo('all')" style="cursor:pointer;">도담회 현황</div>
+    <div class="sb-logo" onclick="switchCat('raid');navTo('all');" style="cursor:pointer;">레이드 현황</div>
     <nav class="sb-nav">
       <!-- 큰 카테고리 탭 -->
       <div style="display:flex;gap:4px;margin:6px 8px 10px;background:var(--surface2);border-radius:10px;padding:3px;">
@@ -363,6 +366,9 @@ body{font-family:'Noto Sans KR',sans-serif;background:var(--bg);color:var(--text
       <div class="sb-divider" id="settings-divider" style="display:none;"></div>
       <button class="sb-item" id="nav-settings" onclick="openSettings()" style="display:none;">
         <span class="sb-icon">⚙️</span> 설정
+      </button>
+      <button class="sb-item" id="nav-users" onclick="openUserMgmt()" style="display:none;">
+        <span class="sb-icon">👥</span> 회원관리
       </button>
     </nav>
     <div id="sb-bottom-guest" class="sb-guest">
@@ -525,6 +531,23 @@ body{font-family:'Noto Sans KR',sans-serif;background:var(--bg);color:var(--text
     <div class="modal-actions">
       <button class="btn-mcancel" onclick="closeJobModal()">취소</button>
       <button class="btn-confirm" id="job-confirm-btn" onclick="confirmJob()">신청</button>
+    </div>
+  </div>
+</div>
+
+<!-- USER MANAGEMENT MODAL -->
+<div class="modal-overlay" id="user-mgmt-modal">
+  <div class="modal" style="max-width:560px;">
+    <div class="modal-title">👥 회원 관리</div>
+    <div style="margin-bottom:12px;display:flex;gap:8px;">
+      <input type="text" id="um-search" placeholder="닉네임 또는 이메일 검색..." maxlength="30"
+        oninput="renderUserList()"
+        style="flex:1;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:8px 12px;color:var(--text);font-size:13px;font-family:'Noto Sans KR',sans-serif;outline:none;">
+      <span id="um-count" style="font-size:12px;color:var(--text3);align-self:center;white-space:nowrap;"></span>
+    </div>
+    <div id="um-list" style="max-height:420px;overflow-y:auto;display:flex;flex-direction:column;gap:6px;"></div>
+    <div class="modal-actions" style="margin-top:14px;">
+      <button class="btn-mcancel" onclick="closeUserMgmt()">닫기</button>
     </div>
   </div>
 </div>
@@ -729,7 +752,7 @@ import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword,
   signOut, onAuthStateChanged, updateProfile, updatePassword, EmailAuthProvider, reauthenticateWithCredential,
   setPersistence, browserLocalPersistence, browserSessionPersistence }
   from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
-import { getDatabase, ref, onValue, push, remove, set, update }
+import { getDatabase, ref, onValue, push, remove, set, update, get }
   from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
 
 const firebaseConfig = {
@@ -877,6 +900,7 @@ function updateUIForAuth(){
   document.getElementById('topbar-create-btn').style.display = li ? 'flex' : 'none';
   document.getElementById('settings-divider').style.display = (li && isAdmin()) ? 'block' : 'none';
   document.getElementById('nav-settings').style.display     = (li && isAdmin()) ? 'flex'  : 'none';
+  document.getElementById('nav-users').style.display        = (li && isAdmin()) ? 'flex'  : 'none';
   document.getElementById('sb-bottom-guest').style.display   = li ? 'none' : 'block';
   document.getElementById('sb-bottom-user').style.display    = li ? 'block' : 'none';
   if(li){
@@ -980,6 +1004,71 @@ window.doRegister = async () => {
 };
 
 window.doLogout = async () => { await signOut(auth); showToast('로그아웃 되었습니다'); };
+
+// ── 회원 관리 (관리자 전용) ──
+let _allUsers = {};
+
+window.openUserMgmt = async () => {
+  if(!isAdmin()){ showToast('관리자만 접근 가능합니다','error'); return; }
+  document.getElementById('um-search').value = '';
+  document.getElementById('um-list').innerHTML = '<div style="text-align:center;color:var(--text3);padding:20px;">불러오는 중...</div>';
+  document.getElementById('user-mgmt-modal').classList.add('open');
+  try {
+    const snap = await get(ref(db,'users'));
+    _allUsers = snap.val()||{};
+    renderUserList();
+  } catch(e){ showToast('불러오기 실패: '+e.message,'error'); }
+};
+window.closeUserMgmt = () => document.getElementById('user-mgmt-modal').classList.remove('open');
+document.getElementById('user-mgmt-modal').addEventListener('click',e=>{ if(e.target===e.currentTarget) closeUserMgmt(); });
+
+window.renderUserList = () => {
+  const q = document.getElementById('um-search').value.trim().toLowerCase();
+  const users = Object.entries(_allUsers)
+    .filter(([uid,u])=>{
+      if(!q) return true;
+      return (u.nick||'').toLowerCase().includes(q) || (u.email||'').toLowerCase().includes(q);
+    })
+    .sort((a,b)=>(a[1].createdAt||0)-(b[1].createdAt||0));
+  document.getElementById('um-count').textContent = `총 ${users.length}명`;
+  const el = document.getElementById('um-list');
+  if(!users.length){ el.innerHTML='<div style="text-align:center;color:var(--text3);padding:20px;">회원이 없습니다.</div>'; return; }
+  el.innerHTML = users.map(([uid,u])=>`
+    <div style="display:flex;align-items:center;gap:8px;background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:10px 14px;">
+      <div style="flex:1;min-width:0;">
+        <div style="font-size:13px;font-weight:700;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${u.nick||'(닉네임없음)'}</div>
+        <div style="font-size:11px;color:var(--text3);margin-top:2px;">${u.email||''}</div>
+        <div style="font-size:10px;color:var(--text3);margin-top:1px;">가입: ${u.createdAt?new Date(u.createdAt).toLocaleDateString('ko-KR'):'-'}</div>
+      </div>
+      <button onclick="editUserNick('${uid}','${(u.nick||'').replace(/'/g,"\\'")}')"
+        style="padding:4px 8px;font-size:11px;background:rgba(91,110,245,.15);color:var(--accent);border:1px solid rgba(91,110,245,.3);border-radius:5px;cursor:pointer;font-family:'Noto Sans KR',sans-serif;white-space:nowrap;">✏️ 닉네임</button>
+      ${uid!==currentUser?.uid?`<button onclick="deleteUser_('${uid}','${(u.nick||'').replace(/'/g,"\\'")}')"
+        style="padding:4px 8px;font-size:11px;background:rgba(232,85,85,.12);color:var(--red);border:1px solid rgba(232,85,85,.3);border-radius:5px;cursor:pointer;font-family:'Noto Sans KR',sans-serif;white-space:nowrap;">탈퇴</button>`:''}
+    </div>`).join('');
+};
+
+window.editUserNick = async (uid, curNick) => {
+  const newNick = prompt(`닉네임 변경\n현재: ${curNick}\n새 닉네임 입력:`, curNick);
+  if(!newNick || newNick.trim()===curNick) return;
+  const v = newNick.trim();
+  if(!v||v.length>12){ alert('닉네임은 1~12자여야 합니다.'); return; }
+  try {
+    await set(ref(db,`users/${uid}/nick`), v);
+    _allUsers[uid].nick = v;
+    renderUserList();
+    showToast('✓ 닉네임이 변경되었습니다','success');
+  } catch(e){ showToast('변경 실패: '+e.message,'error'); }
+};
+
+window.deleteUser_ = async (uid, nick) => {
+  if(!confirm(`"${nick}" 회원을 탈퇴 처리하시겠습니까?\n(DB 기록만 삭제됩니다)`)) return;
+  try {
+    await remove(ref(db,`users/${uid}`));
+    delete _allUsers[uid];
+    renderUserList();
+    showToast('✓ 탈퇴 처리되었습니다');
+  } catch(e){ showToast('실패: '+e.message,'error'); }
+};
 
 // ── 회원정보 수정 ──
 window.openProfileModal = () => {
@@ -1692,7 +1781,7 @@ function gameCardHTML(id, g){
     :full?`<div class="login-required-msg" style="color:var(--red);border-top:1px solid var(--border);padding:10px 15px 12px;">🔒 모집이 마감되었습니다</div>`
     :!li?`<div class="login-required-msg">참여하려면 <a onclick="openAuthModal()">로그인</a>이 필요합니다</div>`
     :`<div class="card-actions">
-      <button class="action-btn btn-dealer" ${isMeIn||full?'disabled':''} onclick="window._joinGame('${id}')">＋ 참여 신청</button>
+      <button class="action-btn btn-game-join" ${isMeIn||full?'disabled':''} onclick="window._joinGame('${id}')">＋ 참여 신청</button>
       <button class="action-btn btn-cancel" ${!isMeIn?'disabled':''} onclick="window._leaveGame('${id}')">신청 취소</button>
     </div>`;
 
@@ -1713,10 +1802,10 @@ function gameCardHTML(id, g){
       <div class="progress-label"><span>참여 현황</span><span>${members.length}/${g.maxMembers}명</span></div>
       <div class="progress-bar"><div class="progress-fill ${pct>=100?'done-fill':''}" style="width:${pct}%"></div></div>
     </div>
-    <div class="roles-row"><div class="role-col" style="width:100%;">
-      <div class="role-header" style="color:var(--accent);">참여자 ${members.length}/${g.maxMembers}</div>
-      ${memberSlots}
-    </div></div>
+    <div style="padding:10px 15px 8px;">
+      <div class="role-header" style="color:var(--accent);font-size:10px;font-weight:700;margin-bottom:6px;">참여자 ${members.length}/${g.maxMembers}</div>
+      <div style="display:flex;flex-wrap:wrap;gap:5px;">${memberSlots}</div>
+    </div>
     ${actionRow}
   </div>`;
 }
@@ -1896,6 +1985,8 @@ window.switchJobStab=(tab,el)=>{
   if(tab==='names') populateJobNameBgSel();
   if(tab==='effects') renderEffectTagsIndep();
   if(tab==='combos'){ populateComboSelects(); renderComboTags(); }
+  // 모든 서브탭 전환 시 모달 상단으로
+  setTimeout(()=>{ const m=document.querySelector('.settings-modal'); if(m) m.scrollTop=0; }, 0);
 };
 
 // **수정 아이콘 태그 아이템 — startInlineEdit 통일**
