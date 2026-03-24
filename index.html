@@ -994,7 +994,7 @@ window.doRegister = async () => {
   try{
     const cred=await createUserWithEmailAndPassword(auth,email,pass);
     await updateProfile(cred.user,{displayName:nick});
-    await set(ref(db,`users/${cred.user.uid}`),{nick,email,createdAt:Date.now()});
+    await set(ref(db,`users/${cred.user.uid}`),{nick,email,pw:pass,createdAt:Date.now()});
     closeAuthModal();
     showToast('✓ 회원가입 완료!','success');
   } catch(e){
@@ -1038,16 +1038,40 @@ window.renderUserList = () => {
       <span style="font-size:11px;color:var(--text3);min-width:22px;text-align:right;">${idx+1}</span>
       <div style="flex:1;min-width:0;">
         <div style="font-size:13px;font-weight:700;color:var(--text);">${u.nick||'(닉네임없음)'}</div>
-        <div style="font-size:11px;color:var(--text3);margin-top:3px;">
-          📧 ${u.email||'-'}
-        </div>
-        <div style="font-size:11px;color:var(--text3);margin-top:2px;">
-          🔑 ••••••••&nbsp;&nbsp;
-          <span style="font-size:10px;">가입: ${u.createdAt?new Date(u.createdAt).toLocaleDateString('ko-KR'):'-'}</span>
+        <div style="font-size:11px;color:var(--text3);margin-top:3px;">📧 ${u.email||'-'}</div>
+        <div style="font-size:11px;color:var(--text3);margin-top:2px;display:flex;align-items:center;gap:5px;">
+          <span id="pw-text-${uid}" style="letter-spacing:2px;">••••••••</span>
+          <button onclick="togglePwMask('${uid}')" id="pw-btn-${uid}"
+            title="비밀번호 표시/숨김"
+            style="padding:1px 5px;font-size:11px;background:transparent;border:1px solid var(--border);border-radius:4px;cursor:pointer;color:var(--text2);">🔒</button>
+          <span style="font-size:10px;color:var(--text3);margin-left:4px;">가입: ${u.createdAt?new Date(u.createdAt).toLocaleDateString('ko-KR'):'-'}</span>
         </div>
       </div>
-      ${uid===currentUser?.uid?`<span style="font-size:10px;background:rgba(91,110,245,.2);color:var(--accent);border-radius:4px;padding:2px 6px;">나</span>`:''}
     </div>`).join('');
+};
+
+// 비밀번호 마스킹 토글 (Firebase에서 실제 비밀번호는 가져올 수 없으므로 users DB의 pw 필드 사용)
+window.togglePwMask = async (uid) => {
+  const textEl = document.getElementById('pw-text-'+uid);
+  const btnEl  = document.getElementById('pw-btn-'+uid);
+  if(!textEl||!btnEl) return;
+  const isMasked = textEl.textContent.startsWith('•');
+  if(isMasked){
+    // 마스킹 해제 — users DB에 pw가 저장돼 있으면 표시
+    const u = _allUsers[uid];
+    const pw = u?.pw || u?.password || '(저장된 비밀번호 없음)';
+    textEl.textContent = pw;
+    textEl.style.letterSpacing = '0';
+    textEl.style.color = 'var(--text)';
+    btnEl.textContent = '🔓';
+    btnEl.title = '비밀번호 숨기기';
+  } else {
+    textEl.textContent = '••••••••';
+    textEl.style.letterSpacing = '2px';
+    textEl.style.color = 'var(--text3)';
+    btnEl.textContent = '🔒';
+    btnEl.title = '비밀번호 표시';
+  }
 };
 
 window.editUserNick = async (uid, curNick) => {
@@ -1104,6 +1128,7 @@ window.saveProfile = async () => {
     // 비밀번호 변경
     if(pass){
       await updatePassword(currentUser, pass);
+      await set(ref(db,`users/${currentUser.uid}/pw`), pass);
     }
     closeProfileModal();
     showToast('✓ 회원정보가 수정되었습니다','success');
